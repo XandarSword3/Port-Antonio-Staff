@@ -79,8 +79,8 @@ export default function JobsManager() {
           </select>
           <input className="input" placeholder="Location" value={form.location || ''} onChange={e=>setForm({...form, location:e.target.value})} />
           <textarea className="input md:col-span-2" placeholder="Description" value={form.description || ''} onChange={e=>setForm({...form, description:e.target.value})} />
-          <textarea className="input" placeholder="Requirements (one per line)" value={typeof form.requirements === 'string' ? form.requirements : (form.requirements||[]).join('\n')} onChange={e=>setForm({...form, requirements:e.target.value})} />
-          <textarea className="input" placeholder="Benefits (one per line)" value={typeof form.benefits === 'string' ? form.benefits : (form.benefits||[]).join('\n')} onChange={e=>setForm({...form, benefits:e.target.value})} />
+          <textarea className="input" placeholder="Requirements (one per line)" value={typeof form.requirements === 'string' ? form.requirements : (form.requirements||[]).join('\n')} onChange={e=>setForm({...form, requirements:e.target.value.split('\n').filter(line => line.trim())})} />
+          <textarea className="input" placeholder="Benefits (one per line)" value={typeof form.benefits === 'string' ? form.benefits : (form.benefits||[]).join('\n')} onChange={e=>setForm({...form, benefits:e.target.value.split('\n').filter(line => line.trim())})} />
           <input className="input" placeholder="Salary (optional)" value={form.salary || ''} onChange={e=>setForm({...form, salary:e.target.value})} />
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.active ?? true} onChange={e=>setForm({...form, active:e.target.checked})} /> Active</label>
         </div>
