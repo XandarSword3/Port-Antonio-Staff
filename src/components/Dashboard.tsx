@@ -135,7 +135,7 @@ export default function Dashboard() {
       }
     }
 
-    const handleDishUpdate = (updatedDishes: Dish[]) => {
+    const handleDishUpdate = (updatedDishes: any[]) => {
       setDishes(updatedDishes);
     };
 
