@@ -107,10 +107,10 @@ CREATE TABLE IF NOT EXISTS footer_settings (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Legal pages (privacy, terms, accessibility)
+-- Legal pages (privacy, terms, accessibility, careers)
 CREATE TABLE IF NOT EXISTS legal_pages (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    type VARCHAR(32) UNIQUE NOT NULL CHECK (type IN ('privacy','terms','accessibility')),
+    type VARCHAR(32) UNIQUE NOT NULL CHECK (type IN ('privacy','terms','accessibility','careers')),
     title VARCHAR(255) NOT NULL,
     sections JSONB NOT NULL DEFAULT '[]'::jsonb,
     updated_by UUID REFERENCES staff_users(id),
