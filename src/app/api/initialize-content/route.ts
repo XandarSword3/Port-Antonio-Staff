@@ -36,7 +36,7 @@ export async function POST() {
     }
 
     // Only initialize if tables are completely empty - don't overwrite existing data
-    const legalPages = [];
+    const legalPages: any[] = [];
 
     for (const page of legalPages) {
       const { data: existingPage } = await supabaseAdmin
