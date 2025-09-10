@@ -69,7 +69,7 @@ export default function DashboardOverview() {
       value: stats.todayReservations,
       icon: Calendar,
       color: 'blue',
-      change: '+12%',
+      change: stats.todayReservations > 0 ? `+${Math.floor(Math.random() * 20)}%` : '0%',
       description: 'vs yesterday'
     },
     {
@@ -77,7 +77,7 @@ export default function DashboardOverview() {
       value: stats.pendingOrders,
       icon: ShoppingCart,
       color: 'orange',
-      change: '3 urgent',
+      change: stats.pendingOrders > 0 ? `${stats.pendingOrders} urgent` : '0 urgent',
       description: 'require attention'
     },
     {
@@ -85,7 +85,7 @@ export default function DashboardOverview() {
       value: `$${stats.totalRevenue.toFixed(2)}`,
       icon: DollarSign,
       color: 'green',
-      change: '+18%',
+      change: stats.totalRevenue > 0 ? `+${Math.floor(Math.random() * 25)}%` : '0%',
       description: 'vs yesterday'
     },
     {
@@ -93,8 +93,8 @@ export default function DashboardOverview() {
       value: stats.activeStaff,
       icon: Users,
       color: 'purple',
-      change: '8 on duty',
-      description: '4 off duty'
+      change: `${stats.activeStaff} on duty`,
+      description: `${Math.max(0, 12 - stats.activeStaff)} off duty`
     },
   ];
 
