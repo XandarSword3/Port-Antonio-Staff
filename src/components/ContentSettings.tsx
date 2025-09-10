@@ -29,24 +29,66 @@ export default function ContentSettings() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    Promise.all([loadFooter(), loadLegal('privacy'), loadLegal('terms'), loadLegal('accessibility')]).finally(() => setLoading(false))
+    initializeAndLoadContent()
   }, [])
 
+  async function initializeAndLoadContent() {
+    try {
+      // Try to load content first
+      await Promise.all([loadFooter(), loadLegal('privacy'), loadLegal('terms'), loadLegal('accessibility')])
+      
+      // Check if we have any content, if not, initialize it
+      const hasFooter = footer && footer.company_name
+      const hasPrivacy = legal.privacy && legal.privacy.sections && legal.privacy.sections.length > 0
+      const hasTerms = legal.terms && legal.terms.sections && legal.terms.sections.length > 0
+      const hasAccessibility = legal.accessibility && legal.accessibility.sections && legal.accessibility.sections.length > 0
+      
+      if (!hasFooter || !hasPrivacy || !hasTerms || !hasAccessibility) {
+        console.log('Initializing content...')
+        const res = await fetch('/api/initialize-content', { method: 'POST' })
+        if (res.ok) {
+          // Reload content after initialization
+          await Promise.all([loadFooter(), loadLegal('privacy'), loadLegal('terms'), loadLegal('accessibility')])
+        }
+      }
+    } catch (e) {
+      console.error('Error initializing content:', e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function loadFooter() {
-    const res = await fetch('/api/footer', { cache: 'no-store' })
-    if (res.ok) {
-      const json = await res.json()
-      if (json.footer) setFooter(json.footer)
-      else setFooter({ company_name: '', description: '', address: '', phone: '', email: '', dining_hours: '', dining_location: '', social_links: {} })
+    try {
+      const res = await fetch('/api/footer', { cache: 'no-store' })
+      if (res.ok) {
+        const json = await res.json()
+        if (json.footer) setFooter(json.footer)
+        else setFooter({ company_name: '', description: '', address: '', phone: '', email: '', dining_hours: '', dining_location: '', social_links: {} })
+      } else {
+        console.error('Failed to load footer:', await res.text())
+        setFooter({ company_name: '', description: '', address: '', phone: '', email: '', dining_hours: '', dining_location: '', social_links: {} })
+      }
+    } catch (e) {
+      console.error('Error loading footer:', e)
+      setFooter({ company_name: '', description: '', address: '', phone: '', email: '', dining_hours: '', dining_location: '', social_links: {} })
     }
   }
 
   async function loadLegal(type: 'privacy' | 'terms' | 'accessibility') {
-    const res = await fetch(`/api/legal?type=${type}`, { cache: 'no-store' })
-    if (res.ok) {
-      const json = await res.json()
-      const page: LegalPage | undefined = json.pages?.[0]
-      setLegal((prev) => ({ ...prev, [type]: page || { type, title: type[0].toUpperCase() + type.slice(1), sections: [] } }))
+    try {
+      const res = await fetch(`/api/legal?type=${type}`, { cache: 'no-store' })
+      if (res.ok) {
+        const json = await res.json()
+        const page: LegalPage | undefined = json.pages?.[0]
+        setLegal((prev) => ({ ...prev, [type]: page || { type, title: type[0].toUpperCase() + type.slice(1), sections: [] } }))
+      } else {
+        console.error(`Failed to load ${type}:`, await res.text())
+        setLegal((prev) => ({ ...prev, [type]: { type, title: type[0].toUpperCase() + type.slice(1), sections: [] } }))
+      }
+    } catch (e) {
+      console.error(`Error loading ${type}:`, e)
+      setLegal((prev) => ({ ...prev, [type]: { type, title: type[0].toUpperCase() + type.slice(1), sections: [] } }))
     }
   }
 

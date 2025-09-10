@@ -161,6 +161,28 @@ CREATE TABLE IF NOT EXISTS staff_activity (
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create events table
+CREATE TABLE IF NOT EXISTS events (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    max_capacity INTEGER,
+    current_capacity INTEGER DEFAULT 0,
+    price DECIMAL(10, 2),
+    currency VARCHAR(3) DEFAULT 'USD',
+    image TEXT,
+    category VARCHAR(20) CHECK (category IN ('conference', 'dining', 'entertainment', 'special')) DEFAULT 'dining',
+    status VARCHAR(20) CHECK (status IN ('draft', 'published', 'cancelled', 'completed')) DEFAULT 'draft',
+    featured_until DATE,
+    created_by UUID REFERENCES staff_users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create notifications table
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -183,6 +205,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);
 CREATE INDEX IF NOT EXISTS idx_kitchen_tickets_status ON kitchen_tickets(status);
 CREATE INDEX IF NOT EXISTS idx_staff_activity_user_id ON staff_activity(user_id);
 CREATE INDEX IF NOT EXISTS idx_staff_activity_timestamp ON staff_activity(timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
+CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
+CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -202,6 +227,7 @@ CREATE TRIGGER update_kitchen_tickets_updated_at BEFORE UPDATE ON kitchen_ticket
 CREATE TRIGGER update_footer_settings_updated_at BEFORE UPDATE ON footer_settings FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_legal_pages_updated_at BEFORE UPDATE ON legal_pages FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_jobs_updated_at BEFORE UPDATE ON jobs FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_events_updated_at BEFORE UPDATE ON events FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
 -- Row Level Security Policies
 
@@ -320,3 +346,8 @@ CREATE POLICY "Modify legal (admins)" ON legal_pages FOR ALL USING (auth.jwt() -
 ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Read jobs" ON jobs FOR SELECT USING (true);
 CREATE POLICY "Modify jobs (admins)" ON jobs FOR ALL USING (auth.jwt() ->> 'role' IN ('admin','owner'));
+
+-- Events: readable by all, modifiable by admins/owners
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Read events" ON events FOR SELECT USING (true);
+CREATE POLICY "Modify events (admins)" ON events FOR ALL USING (auth.jwt() ->> 'role' IN ('admin','owner'));

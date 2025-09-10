@@ -100,6 +100,19 @@ export default function DashboardOverview() {
 
   const recentActivity: { time: string; action: string; type: 'reservation' | 'order' | 'staff' | 'kitchen' | 'payment' }[] = [];
 
+  const addSampleData = async () => {
+    try {
+      const res = await fetch('/api/sample-data', { method: 'POST' })
+      if (res.ok) {
+        alert('Sample data added successfully! Refresh the page to see the changes.')
+      } else {
+        alert('Failed to add sample data')
+      }
+    } catch (e) {
+      alert('Error adding sample data')
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Welcome Message */}
@@ -188,7 +201,7 @@ export default function DashboardOverview() {
         {/* Quick Actions */}
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -223,6 +236,16 @@ export default function DashboardOverview() {
             >
               <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
               <div className="text-sm font-medium text-gray-700">View Alerts</div>
+            </motion.button>
+            
+            <motion.button
+              onClick={addSampleData}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-400 hover:bg-green-50 transition-colors text-center"
+            >
+              <CheckCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <div className="text-sm font-medium text-gray-700">Add Sample Data</div>
             </motion.button>
           </div>
         </div>

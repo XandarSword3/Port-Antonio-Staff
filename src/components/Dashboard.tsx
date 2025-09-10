@@ -159,49 +159,118 @@ export default function Dashboard() {
     );
   };
 
-  // Event Manager Wrapper with mock data
+  // Event Manager Wrapper with real database data
   const EventManagerWrapper = () => {
-    const [events, setEvents] = useState([
-      {
-        id: '1',
-        title: 'Wine Tasting Evening',
-        description: 'Join us for an exclusive wine tasting event',
-        date: new Date('2024-02-15'),
-        startTime: '18:00',
-        endTime: '21:00',
-        location: 'Main Dining Room',
-        maxCapacity: 30,
-        currentCapacity: 12,
-        price: 45,
-        currency: 'USD',
-        category: 'dining' as const,
-        status: 'published' as const,
-        createdAt: new Date(),
-        createdBy: 'admin',
-        updatedAt: new Date()
+    const [events, setEvents] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      loadEvents();
+    }, []);
+
+    async function loadEvents() {
+      try {
+        const res = await fetch('/api/events', { cache: 'no-store' });
+        if (!res.ok) throw new Error(await res.text());
+        const json = await res.json();
+        const data = (json.events || []).map((event: any) => ({
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          date: new Date(event.date),
+          startTime: event.start_time,
+          endTime: event.end_time,
+          location: event.location,
+          maxCapacity: event.max_capacity,
+          currentCapacity: event.current_capacity,
+          price: event.price,
+          currency: event.currency,
+          image: event.image,
+          category: event.category,
+          status: event.status,
+          featuredUntil: event.featured_until ? new Date(event.featured_until) : undefined,
+          createdAt: new Date(event.created_at),
+          createdBy: event.created_by,
+          updatedAt: new Date(event.updated_at)
+        }));
+        setEvents(data);
+      } catch (e) {
+        console.error('Failed to load events:', e);
+      } finally {
+        setLoading(false);
       }
-    ]);
+    }
 
-    const handleAddEvent = (eventData: any) => {
-      const newEvent = {
-        ...eventData,
-        id: Date.now().toString(),
-        createdAt: new Date()
-      };
-      setEvents([...events, newEvent]);
+    const handleAddEvent = async (eventData: any) => {
+      try {
+        const res = await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(eventData)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const json = await res.json();
+        if (json.event) {
+          const newEvent = {
+            ...json.event,
+            date: new Date(json.event.date),
+            featuredUntil: json.event.featured_until ? new Date(json.event.featured_until) : undefined,
+            createdAt: new Date(json.event.created_at),
+            updatedAt: new Date(json.event.updated_at)
+          };
+          setEvents([...events, newEvent]);
+        }
+      } catch (e) {
+        alert('Failed to create event: ' + (e as any)?.message);
+      }
     };
 
-    const handleUpdateEvent = (id: string, eventData: any) => {
-      setEvents(events.map(event => 
-        event.id === id ? { ...event, ...eventData } : event
-      ));
+    const handleUpdateEvent = async (id: string, eventData: any) => {
+      try {
+        const res = await fetch('/api/events', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, ...eventData })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const json = await res.json();
+        if (json.event) {
+          const updatedEvent = {
+            ...json.event,
+            date: new Date(json.event.date),
+            featuredUntil: json.event.featured_until ? new Date(json.event.featured_until) : undefined,
+            createdAt: new Date(json.event.created_at),
+            updatedAt: new Date(json.event.updated_at)
+          };
+          setEvents(events.map(event => 
+            event.id === id ? updatedEvent : event
+          ));
+        }
+      } catch (e) {
+        alert('Failed to update event: ' + (e as any)?.message);
+      }
     };
 
-    const handleDeleteEvent = (id: string) => {
-      if (confirm('Are you sure you want to delete this event?')) {
+    const handleDeleteEvent = async (id: string) => {
+      if (!confirm('Are you sure you want to delete this event?')) return;
+      
+      try {
+        const res = await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(await res.text());
         setEvents(events.filter(event => event.id !== id));
+      } catch (e) {
+        alert('Failed to delete event: ' + (e as any)?.message);
       }
     };
+
+    if (loading) {
+      return (
+        <div className="p-6 flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-staff-600"></div>
+          <span className="ml-3 text-gray-600">Loading events...</span>
+        </div>
+      );
+    }
 
     return (
       <div className="p-6">

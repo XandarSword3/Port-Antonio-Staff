@@ -16,6 +16,7 @@ export default function OrderManager() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -32,6 +33,24 @@ export default function OrderManager() {
     }
     loadOrders()
   }, [])
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+      return
+    }
+
+    setDeleting(orderId)
+    try {
+      const res = await fetch(`/api/orders?id=${orderId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(await res.text())
+      
+      setOrders(orders.filter(order => order.id !== orderId))
+    } catch (e: any) {
+      alert('Failed to delete order: ' + (e?.message || 'Unknown error'))
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -70,6 +89,13 @@ export default function OrderManager() {
                 <div className="text-sm">Status: <span className="font-medium">{o.status || 'pending'}</span></div>
                 <div className="text-sm">Payment: <span className="font-medium">{o.payment_status || 'pending'}</span></div>
                 <div className="text-lg font-bold text-staff-700">${(o.total || 0).toFixed(2)}</div>
+                <button
+                  onClick={() => handleDeleteOrder(o.id)}
+                  disabled={deleting === o.id}
+                  className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleting === o.id ? 'Deleting...' : 'Delete'}
+                </button>
               </div>
             </div>
           ))}
