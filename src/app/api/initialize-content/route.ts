@@ -133,27 +133,33 @@ export async function POST() {
         sections: [
           {
             id: '1',
-            title: 'Join Our Team',
-            content: 'At Port Antonio Resort, we\'re always looking for passionate individuals to join our team. We offer competitive benefits, growth opportunities, and the chance to work in a beautiful beachfront environment.',
+            title: 'Join our team at Port Antonio Resort',
+            content: 'Join our team at Port Antonio Resort',
             order: 1
           },
           {
             id: '2',
-            title: 'Available Positions',
-            content: 'We have opportunities in hospitality, culinary arts, guest services, maintenance, and management. Positions range from entry-level to senior management roles.',
+            title: 'Why Work With Us?',
+            content: 'Beautiful Location: Work in a stunning beachfront resort with breathtaking Mediterranean views\n\nGreat Team: Join a passionate team dedicated to providing exceptional hospitality experiences\n\nCareer Growth: Opportunities for professional development and advancement within our organization',
             order: 2
           },
           {
             id: '3',
-            title: 'Benefits',
-            content: 'Our team members enjoy competitive wages, health insurance, paid time off, employee discounts, and opportunities for professional development and advancement.',
+            title: 'Current Openings',
+            content: 'Head Chef\nKitchen • full time • Port Antonio, Lebanon\nLead our culinary team in creating exceptional Mediterranean and international cuisine. Oversee kitchen operations, menu development, and staff management.\n\nRequirements:\n• 5+ years of experience as a head chef or sous chef\n• Culinary degree or equivalent experience\n• Experience with Mediterranean cuisine\n• Strong leadership and communication skills\n• Food safety certification\n\nBenefits:\n• Competitive salary package\n• Health and dental insurance\n• Staff meals and accommodation\n• Professional development opportunities\n• Performance bonuses\n\n---\n\nServer\nFront of House • full time • Port Antonio, Lebanon\nProvide exceptional dining service to our guests. Take orders, serve food and beverages, and ensure customer satisfaction in our beautiful beachfront setting.\n\nRequirements:\n• Previous serving experience preferred\n• Excellent communication skills\n• Ability to work in a fast-paced environment\n• Knowledge of food and wine pairings\n• Multilingual skills (Arabic, French, English) preferred\n\nBenefits:\n• Hourly wages plus tips\n• Flexible scheduling\n• Staff meal benefits\n• Training and development\n• Friendly work environment\n\n---\n\nSous Chef\nKitchen • full time • Port Antonio, Lebanon\nSupport the head chef in daily kitchen operations, food preparation, and staff supervision. Help maintain our high culinary standards.\n\nRequirements:\n• 3+ years of professional kitchen experience\n• Culinary training or apprenticeship\n• Knowledge of food safety standards\n• Ability to work under pressure\n• Team player with leadership potential\n\nBenefits:\n• Competitive salary\n• Career advancement opportunities\n• Health benefits\n• Staff accommodation available\n• Continuing education support',
             order: 3
           },
           {
             id: '4',
             title: 'How to Apply',
-            content: 'To apply for a position, please send your resume and cover letter to careers@portantonio.com or call +1 (876) 555-0123 to speak with our HR department.',
+            content: 'Ready to join our team? We\'d love to hear from you! Here\'s how to apply:\n\nEmail Application\nSend your resume and cover letter to:\ncareers@portantonio.com\nInclude the position title in the subject line\n\nIn-Person Application\nVisit us during business hours:\nPort Antonio, Mastita, Lebanon\nMonday - Friday, 9:00 AM - 5:00 PM',
             order: 4
+          },
+          {
+            id: '5',
+            title: 'Equal Opportunity Employer',
+            content: 'Port Antonio Resort is committed to creating a diverse and inclusive workplace. We are an equal opportunity employer and welcome applications from all qualified candidates regardless of race, color, religion, sex, sexual orientation, gender identity, national origin, age, or disability status.',
+            order: 5
           }
         ]
       }
