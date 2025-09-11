@@ -110,7 +110,7 @@ export default function ContentSettings() {
       if (!res.ok) throw new Error(await res.text())
       const pages: LegalPage[] = (await res.json()).legalPages || []
       const byType = pages.reduce((acc: any, p: LegalPage) => { acc[p.type] = p; return acc }, {})
-      const mapped = {
+      const mapped: Record<'privacy' | 'terms' | 'accessibility', LegalPage> = {
         privacy: byType.privacy || { type: 'privacy', title: '', sections: [] },
         terms: byType.terms || { type: 'terms', title: '', sections: [] },
         accessibility: byType.accessibility || { type: 'accessibility', title: '', sections: [] }
@@ -119,7 +119,7 @@ export default function ContentSettings() {
       return mapped
     } catch (e) {
       console.error('Error loading legal pages:', e)
-      const empty = {
+      const empty: Record<'privacy' | 'terms' | 'accessibility', LegalPage> = {
         privacy: { type: 'privacy', title: '', sections: [] },
         terms: { type: 'terms', title: '', sections: [] },
         accessibility: { type: 'accessibility', title: '', sections: [] }
