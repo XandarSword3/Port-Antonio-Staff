@@ -22,8 +22,9 @@ type LegalPage = {
 }
 
 export default function ContentSettings() {
-  const [activeTab, setActiveTab] = useState<'footer'>('footer')
+  const [activeTab, setActiveTab] = useState<'footer' | 'privacy' | 'terms' | 'accessibility'>('footer')
   const [footer, setFooter] = useState<Footer | null>(null)
+  const [legal, setLegal] = useState<Record<'privacy' | 'terms' | 'accessibility', LegalPage | null>>({ privacy: null, terms: null, accessibility: null })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -33,7 +34,7 @@ export default function ContentSettings() {
 
   async function initializeAndLoadContent() {
     try {
-      await loadFooter()
+      await Promise.all([loadFooter(), loadAllLegal()])
     } catch (e) {
       console.error('Error initializing content:', e)
     } finally {
@@ -59,7 +60,26 @@ export default function ContentSettings() {
     }
   }
 
-  // Legal functionality removed
+  async function loadAllLegal() {
+    try {
+      const res = await fetch('/api/legal', { cache: 'no-store' })
+      if (!res.ok) throw new Error(await res.text())
+      const pages: LegalPage[] = (await res.json()).legalPages || []
+      const byType = pages.reduce((acc: any, p: LegalPage) => { acc[p.type] = p; return acc }, {})
+      setLegal({
+        privacy: byType.privacy || { type: 'privacy', title: '', sections: [] },
+        terms: byType.terms || { type: 'terms', title: '', sections: [] },
+        accessibility: byType.accessibility || { type: 'accessibility', title: '', sections: [] }
+      })
+    } catch (e) {
+      console.error('Error loading legal pages:', e)
+      setLegal({
+        privacy: { type: 'privacy', title: '', sections: [] },
+        terms: { type: 'terms', title: '', sections: [] },
+        accessibility: { type: 'accessibility', title: '', sections: [] }
+      })
+    }
+  }
 
   async function saveFooter() {
     if (!footer) return
@@ -67,6 +87,17 @@ export default function ContentSettings() {
     const res = await fetch('/api/footer', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(footer) })
     setSaving(false)
     if (!res.ok) alert('Failed to save footer')
+  }
+
+  async function saveLegal(type: 'privacy' | 'terms' | 'accessibility') {
+    const page = legal[type]
+    if (!page) return
+    setSaving(true)
+    const payload = { type: page.type, title: page.title, sections: page.sections }
+    const res = await fetch('/api/legal', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    setSaving(false)
+    if (!res.ok) alert('Failed to save')
+    else await loadAllLegal()
   }
 
   if (loading) {
@@ -83,7 +114,9 @@ export default function ContentSettings() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-2">
-        <button onClick={()=>setActiveTab('footer')} className={`px-4 py-2 rounded ${activeTab==='footer'?'bg-staff-600 text-white':'bg-gray-100'}`}>Footer</button>
+        {(['footer','privacy','terms','accessibility'] as const).map(tab => (
+          <button key={tab} onClick={()=>setActiveTab(tab)} className={`px-4 py-2 rounded ${activeTab===tab?'bg-staff-600 text-white':'bg-gray-100'}`}>{tab[0].toUpperCase()+tab.slice(1)}</button>
+        ))}
       </div>
 
       {activeTab==='footer' && footer && (
@@ -109,7 +142,27 @@ export default function ContentSettings() {
         </div>
       )}
 
-      {/* Legal tabs removed */}
+      {(['privacy','terms','accessibility'] as const).map(type => (
+        activeTab===type && legal[type] && (
+          <div key={type} className="card p-6 space-y-4">
+            <input className="input" placeholder="Title" value={legal[type]!.title} onChange={e=>setLegal(prev=>({ ...prev, [type]: { ...(prev[type] as LegalPage), title:e.target.value } }))} />
+            <div className="space-y-3">
+              {(legal[type]!.sections || []).sort((a,b)=>a.order-b.order).map((s, idx) => (
+                <div key={s.id || idx} className="bg-gray-50 p-3 rounded">
+                  <input className="input mb-2" placeholder="Section title" value={s.title} onChange={e=>{
+                    const updated = [...legal[type]!.sections]; updated[idx] = { ...s, title:e.target.value }; setLegal(prev=>({ ...prev, [type]: { ...(prev[type] as LegalPage), sections: updated } }))
+                  }} />
+                  <textarea className="input" placeholder="Content" value={s.content} onChange={e=>{ const updated = [...legal[type]!.sections]; updated[idx] = { ...s, content:e.target.value }; setLegal(prev=>({ ...prev, [type]: { ...(prev[type] as LegalPage), sections: updated } })) }} />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={()=>{ const page = legal[type]!; const nextOrder = (page.sections?.length||0)+1; const sec = { id: crypto.randomUUID(), title:'', content:'', order: nextOrder }; setLegal(prev=>({ ...prev, [type]: { ...(prev[type] as LegalPage), sections: [ ...(prev[type]?.sections||[]), sec ] } })) }} className="px-4 py-2 bg-gray-200 rounded">Add Section</button>
+              <SaveLegalButton disabled={saving} onSave={()=>saveLegal(type)} label={`Save ${type[0].toUpperCase()+type.slice(1)}`} />
+            </div>
+          </div>
+        )
+      ))}
     </div>
   )
 }
