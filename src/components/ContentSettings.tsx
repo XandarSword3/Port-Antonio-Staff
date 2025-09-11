@@ -66,21 +66,24 @@ export default function ContentSettings() {
 
   async function loadAllContent() {
     try {
-      const res = await fetch('/api/customer-content', { cache: 'no-store' })
-      if (!res.ok) throw new Error(await res.text())
-      const json = await res.json()
+      // Footer
+      let nextFooter: Footer
+      {
+        const res = await fetch('/api/footer', { cache: 'no-store' })
+        if (!res.ok) throw new Error(await res.text())
+        const json = await res.json()
+        nextFooter = json.footer || { company_name: '', description: '', address: '', phone: '', email: '', dining_hours: '', dining_location: '', social_links: {} }
+        setFooter(nextFooter)
+      }
 
-      if (json.footer) setFooter(json.footer as Footer)
-      else setFooter({ company_name: '', description: '', address: '', phone: '', email: '', dining_hours: '', dining_location: '', social_links: {} })
+      // Legal (get the value returned, not from state)
+      const nextLegal = await loadAllLegal()
 
-      await loadAllLegal()
-
-      return { footer: json.footer as Footer | null, legal: { privacy: legal.privacy, terms: legal.terms, accessibility: legal.accessibility } }
+      return { footer: nextFooter, legal: nextLegal }
     } catch (e) {
       console.error('Failed to load all content:', e)
-      // Fall back
-      await Promise.all([loadFooter(), loadAllLegal()])
-      return { footer, legal }
+      const [_, nextLegal] = await Promise.all([loadFooter(), loadAllLegal()])
+      return { footer, legal: nextLegal }
     }
   }
 
@@ -103,21 +106,26 @@ export default function ContentSettings() {
 
   async function loadAllLegal() {
     try {
-      const res = await fetch(`/api/legal`, { cache: 'no-store' })
-      if (res.ok) {
-        const json = await res.json()
-        const pages: LegalPage[] = json.legalPages || []
-        const byType = pages.reduce((acc: any, p: LegalPage) => { acc[p.type] = p; return acc }, {})
-        setLegal({
-          privacy: byType.privacy || { type: 'privacy', title: '', sections: [] },
-          terms: byType.terms || { type: 'terms', title: '', sections: [] },
-          accessibility: byType.accessibility || { type: 'accessibility', title: '', sections: [] }
-        })
-      } else {
-        console.error('Failed to load legal pages:', await res.text())
+      const res = await fetch('/api/legal', { cache: 'no-store' })
+      if (!res.ok) throw new Error(await res.text())
+      const pages: LegalPage[] = (await res.json()).legalPages || []
+      const byType = pages.reduce((acc: any, p: LegalPage) => { acc[p.type] = p; return acc }, {})
+      const mapped = {
+        privacy: byType.privacy || { type: 'privacy', title: '', sections: [] },
+        terms: byType.terms || { type: 'terms', title: '', sections: [] },
+        accessibility: byType.accessibility || { type: 'accessibility', title: '', sections: [] }
       }
+      setLegal(mapped)
+      return mapped
     } catch (e) {
       console.error('Error loading legal pages:', e)
+      const empty = {
+        privacy: { type: 'privacy', title: '', sections: [] },
+        terms: { type: 'terms', title: '', sections: [] },
+        accessibility: { type: 'accessibility', title: '', sections: [] }
+      }
+      setLegal(empty)
+      return empty
     }
   }
 
