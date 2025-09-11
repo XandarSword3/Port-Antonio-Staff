@@ -42,12 +42,20 @@ export default function ContentSettings() {
       const hasTerms = !!(loaded.legal.terms && loaded.legal.terms.sections && loaded.legal.terms.sections.length > 0)
       const hasAccessibility = !!(loaded.legal.accessibility && loaded.legal.accessibility.sections && loaded.legal.accessibility.sections.length > 0)
 
-      // If nothing exists at all, seed initial structure once
+      // If any legal page missing, try syncing from customer site via env URLs first
+      if (!hasPrivacy || !hasTerms || !hasAccessibility) {
+        try {
+          const syncRes = await fetch('/api/sync-legal', { method: 'POST' })
+          if (syncRes.ok) {
+            await loadAllContent()
+          }
+        } catch {}
+      }
+
+      // If still nothing exists at all, seed initial structure once as a last resort
       if (!hasFooter && !hasPrivacy && !hasTerms && !hasAccessibility) {
         const res = await fetch('/api/initialize-content', { method: 'POST' })
-        if (res.ok) {
-          await loadAllContent()
-        }
+        if (res.ok) await loadAllContent()
       }
     } catch (e) {
       console.error('Error initializing content:', e)
