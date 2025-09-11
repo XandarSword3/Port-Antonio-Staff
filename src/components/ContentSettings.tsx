@@ -158,7 +158,7 @@ export default function ContentSettings() {
             </div>
             <div className="flex gap-2">
               <button onClick={()=>{ const page = legal[type]!; const nextOrder = (page.sections?.length||0)+1; const sec = { id: crypto.randomUUID(), title:'', content:'', order: nextOrder }; setLegal(prev=>({ ...prev, [type]: { ...(prev[type] as LegalPage), sections: [ ...(prev[type]?.sections||[]), sec ] } })) }} className="px-4 py-2 bg-gray-200 rounded">Add Section</button>
-              <SaveLegalButton disabled={saving} onSave={()=>saveLegal(type)} label={`Save ${type[0].toUpperCase()+type.slice(1)}`} />
+              <button disabled={saving} onClick={()=>saveLegal(type)} className="btn-primary px-4 py-2 disabled:opacity-50">{`Save ${type[0].toUpperCase()+type.slice(1)}`}</button>
             </div>
           </div>
         )
