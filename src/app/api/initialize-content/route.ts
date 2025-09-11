@@ -35,24 +35,8 @@ export async function POST() {
       if (footerError) throw footerError;
     }
 
-    // Only initialize if tables are completely empty - don't overwrite existing data
-    const legalPages: any[] = [];
-
-    for (const page of legalPages) {
-      const { data: existingPage } = await supabaseAdmin
-        .from('legal_pages')
-        .select('id')
-        .eq('type', page.type)
-        .limit(1);
-
-      if (!existingPage || existingPage.length === 0) {
-        const { error: pageError } = await supabaseAdmin
-          .from('legal_pages')
-          .insert([page]);
-
-        if (pageError) throw pageError;
-      }
-    }
+    // No longer initializing legal pages with hardcoded content
+    // Content should be loaded from database only
 
     return NextResponse.json({ success: true, message: 'Content initialized successfully' })
   } catch (error: any) {
