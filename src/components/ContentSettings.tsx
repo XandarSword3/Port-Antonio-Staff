@@ -67,7 +67,7 @@ export default function ContentSettings() {
       const pages: LegalPage[] = (await res.json()).legalPages || []
       const byType = pages.reduce((acc: any, p: LegalPage) => { acc[p.type] = p; return acc }, {})
       
-      // Check if existing pages have placeholder content and replace them
+      // Check if existing pages have placeholder content and import from customer site
       const isPlaceholderContent = (content: string) => {
         return content.includes('<PASTE REAL') || 
                content.includes('PASTE REAL') || 
@@ -80,122 +80,66 @@ export default function ContentSettings() {
                sections.some(s => isPlaceholderContent(s.content))
       }
       
-      // Auto-initialize missing or placeholder legal pages with real content
-      const defaultPages = {
-        privacy: {
-          type: 'privacy' as const,
-          title: 'Privacy Policy',
-          sections: [
-            {
-              id: 'intro',
-              title: 'Introduction',
-              content: 'At Port San Antonio Resort & Restaurant, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, and protect your information when you visit our resort, dine at our restaurant, or use our services.',
-              order: 1
-            },
-            {
-              id: 'data-collection',
-              title: 'Information We Collect',
-              content: 'We may collect personal information such as your name, contact details, reservation preferences, and payment information when you make reservations, dine with us, or use our services. We also collect information automatically through our website and digital systems to improve your experience.',
-              order: 2
-            },
-            {
-              id: 'data-use',
-              title: 'How We Use Your Information',
-              content: 'We use your personal information to provide and improve our services, process reservations and payments, communicate with you about your visits, and ensure the safety and security of our guests and staff.',
-              order: 3
-            },
-            {
-              id: 'data-protection',
-              title: 'Data Protection',
-              content: 'We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. Your information is stored securely and accessed only by authorized personnel.',
-              order: 4
-            }
-          ]
-        },
-        terms: {
-          type: 'terms' as const,
-          title: 'Terms of Service',
-          sections: [
-            {
-              id: 'acceptance',
-              title: 'Acceptance of Terms',
-              content: 'By visiting Port San Antonio Resort & Restaurant, making reservations, or using our services, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.',
-              order: 1
-            },
-            {
-              id: 'services',
-              title: 'Our Services',
-              content: 'Port San Antonio Resort & Restaurant provides luxury accommodation, fine dining, and hospitality services. We reserve the right to modify or discontinue any service at any time without notice.',
-              order: 2
-            },
-            {
-              id: 'reservations',
-              title: 'Reservations and Cancellations',
-              content: 'Reservations are subject to availability and our cancellation policy. Cancellations must be made within the specified timeframe to avoid charges. Special events and peak seasons may have different policies.',
-              order: 3
-            },
-            {
-              id: 'conduct',
-              title: 'Guest Conduct',
-              content: 'We expect all guests to conduct themselves in a respectful manner. We reserve the right to refuse service or remove guests who engage in disruptive, illegal, or inappropriate behavior.',
-              order: 4
-            }
-          ]
-        },
-        accessibility: {
-          type: 'accessibility' as const,
-          title: 'Accessibility Statement',
-          sections: [
-            {
-              id: 'commitment',
-              title: 'Our Commitment to Accessibility',
-              content: 'Port San Antonio Resort & Restaurant is committed to ensuring that our facilities and services are accessible to all guests, including those with disabilities. We strive to provide an inclusive and welcoming environment for everyone.',
-              order: 1
-            },
-            {
-              id: 'facilities',
-              title: 'Accessible Facilities',
-              content: 'Our resort features wheelchair-accessible rooms, ramps, accessible parking spaces, and adapted bathrooms. Our restaurant dining areas are designed to accommodate guests with mobility devices.',
-              order: 2
-            },
-            {
-              id: 'services',
-              title: 'Accessibility Services',
-              content: 'We offer assistance with luggage, accessible transportation options, and can accommodate special dietary requirements. Our staff is trained to provide courteous assistance to guests with disabilities.',
-              order: 3
-            },
-            {
-              id: 'feedback',
-              title: 'Accessibility Feedback',
-              content: 'We welcome feedback about the accessibility of our facilities and services. If you encounter any barriers or have suggestions for improvement, please contact our management team.',
-              order: 4
-            }
-          ]
-        }
-      }
-
-      // Replace missing or placeholder pages
-      for (const [type, defaultPage] of Object.entries(defaultPages)) {
+      // Import from customer website for missing or placeholder pages
+      const customerSiteUrl = 'https://port-san-antonio.vercel.app'
+      const legalTypes = ['privacy', 'terms', 'accessibility'] as const
+      
+      for (const type of legalTypes) {
         const existingPage = byType[type]
-        const needsReplacement = !existingPage || hasPlaceholderSections(existingPage.sections)
+        const needsImport = !existingPage || hasPlaceholderSections(existingPage.sections)
         
-        if (needsReplacement) {
-          console.log(`Replacing placeholder content for ${type}`)
-          const createRes = await fetch('/api/legal', { 
-            method: 'PUT', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(defaultPage) 
-          })
-          if (createRes.ok) {
-            byType[type] = defaultPage
+        if (needsImport) {
+          try {
+            console.log(`Importing ${type} from customer website...`)
+            
+            // Fetch from customer site API
+            const customerRes = await fetch(`${customerSiteUrl}/api/legal?type=${encodeURIComponent(type)}`, { cache: 'no-store' })
+            if (!customerRes.ok) {
+              console.log(`Failed to fetch ${type} from customer site: ${customerRes.status}`)
+              continue
+            }
+            
+            const customerData = await customerRes.json()
+            const customerPage = customerData.legalPages && customerData.legalPages[0]
+            if (!customerPage) {
+              console.log(`No ${type} data found in customer API`)
+              continue
+            }
+            
+            // Import via our API
+            const importData = {
+              type,
+              title: customerPage.title || (type === 'privacy' ? 'Privacy Policy' : 
+                                            type === 'terms' ? 'Terms of Service' : 
+                                            'Accessibility Statement'),
+              sections: customerPage.sections || []
+            }
+            
+            const importRes = await fetch('/api/legal', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(importData)
+            })
+            
+            if (importRes.ok) {
+              const imported = await importRes.json()
+              if (imported.legalPage) {
+                byType[type] = imported.legalPage
+                console.log(`✓ Imported ${type} page successfully`)
+              }
+            } else {
+              console.log(`Failed to save imported ${type}:`, await importRes.text())
+            }
+          } catch (e) {
+            console.error(`Error importing ${type}:`, e)
           }
         }
       }
 
       setLegal({
-        privacy: byType.privacy || defaultPages.privacy,
-        terms: byType.terms || defaultPages.terms,
-        accessibility: byType.accessibility || defaultPages.accessibility
+        privacy: byType.privacy || { type: 'privacy', title: 'Privacy Policy', sections: [] },
+        terms: byType.terms || { type: 'terms', title: 'Terms of Service', sections: [] },
+        accessibility: byType.accessibility || { type: 'accessibility', title: 'Accessibility Statement', sections: [] }
       })
     } catch (e) {
       console.error('Error loading legal pages:', e)
