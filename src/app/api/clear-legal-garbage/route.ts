@@ -18,7 +18,7 @@ export async function POST() {
     }
 
     // Import fresh data from customer website
-    const customerSiteUrl = 'https://port-san-antonio.vercel.app'
+    const customerSiteUrl = 'https://port-antonio.vercel.app'
     const legalTypes = ['privacy', 'terms', 'accessibility']
     const imported = []
 

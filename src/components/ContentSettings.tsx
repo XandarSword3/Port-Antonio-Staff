@@ -81,7 +81,7 @@ export default function ContentSettings() {
       }
       
       // Import from customer website for missing or placeholder pages
-      const customerSiteUrl = 'https://port-san-antonio.vercel.app'
+      const customerSiteUrl = 'https://port-antonio.vercel.app'
       const legalTypes = ['privacy', 'terms', 'accessibility'] as const
       
       for (const type of legalTypes) {
@@ -144,9 +144,9 @@ export default function ContentSettings() {
     } catch (e) {
       console.error('Error loading legal pages:', e)
       setLegal({
-        privacy: { type: 'privacy', title: '', sections: [] },
-        terms: { type: 'terms', title: '', sections: [] },
-        accessibility: { type: 'accessibility', title: '', sections: [] }
+        privacy: { type: 'privacy', title: 'Privacy Policy', sections: [] },
+        terms: { type: 'terms', title: 'Terms of Service', sections: [] },
+        accessibility: { type: 'accessibility', title: 'Accessibility Statement', sections: [] }
       })
     }
   }
