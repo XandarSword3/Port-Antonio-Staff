@@ -13,21 +13,9 @@ export async function GET() {
       .select('*')
       .limit(1);
 
-    // Get all legal pages
-    const { data: legalData, error: legalError } = await supabaseAdmin
-      .from('legal_pages')
-      .select('*')
-      .order('type');
-
-    // Organize legal pages by type
-    const legalPages = legalData?.reduce((acc, page) => {
-      acc[page.type] = page;
-      return acc;
-    }, {} as Record<string, any>) || {};
-
     return NextResponse.json({
       footer: footerData?.[0] || null,
-      legal: legalPages,
+      legal: {},
       success: true
     })
   } catch (error: any) {

@@ -182,7 +182,7 @@ export interface JobPosition {
 
 export interface PageContent {
   id: string
-  pageId: 'careers' | 'privacy' | 'terms' | 'accessibility'
+  pageId: 'careers'
   section: string
   content: string
   updatedAt: Date
@@ -204,20 +204,6 @@ export interface FooterSettings {
     twitter?: string
     linkedin?: string
   }
-  lastUpdated: Date
-  updatedBy: string
-}
-
-export interface LegalPageContent {
-  id: string
-  type: 'privacy' | 'terms' | 'accessibility'
-  title: string
-  sections: {
-    id: string
-    title: string
-    content: string
-    order: number
-  }[]
   lastUpdated: Date
   updatedBy: string
 }

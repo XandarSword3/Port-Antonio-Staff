@@ -13,10 +13,6 @@ export async function GET() {
       .select('*')
       .limit(1);
 
-    const { data: legalData, error: legalError } = await supabaseAdmin
-      .from('legal_pages')
-      .select('*')
-      .order('type');
 
     const { data: eventsData, error: eventsError } = await supabaseAdmin
       .from('events')
@@ -25,11 +21,11 @@ export async function GET() {
 
     return NextResponse.json({
       footer: footerData?.[0] || null,
-      legal: legalData || [],
+      legal: [],
       events: eventsData || [],
       errors: {
         footer: footerError?.message,
-        legal: legalError?.message,
+        legal: undefined,
         events: eventsError?.message
       }
     })
