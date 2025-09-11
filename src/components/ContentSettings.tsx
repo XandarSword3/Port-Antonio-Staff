@@ -67,7 +67,20 @@ export default function ContentSettings() {
       const pages: LegalPage[] = (await res.json()).legalPages || []
       const byType = pages.reduce((acc: any, p: LegalPage) => { acc[p.type] = p; return acc }, {})
       
-      // Auto-initialize missing legal pages with real content
+      // Check if existing pages have placeholder content and replace them
+      const isPlaceholderContent = (content: string) => {
+        return content.includes('<PASTE REAL') || 
+               content.includes('PASTE REAL') || 
+               content.length < 50 || 
+               content.trim() === ''
+      }
+
+      const hasPlaceholderSections = (sections: any[]) => {
+        return !sections || sections.length === 0 || 
+               sections.some(s => isPlaceholderContent(s.content))
+      }
+      
+      // Auto-initialize missing or placeholder legal pages with real content
       const defaultPages = {
         privacy: {
           type: 'privacy' as const,
@@ -161,9 +174,13 @@ export default function ContentSettings() {
         }
       }
 
-      // Auto-create missing pages
+      // Replace missing or placeholder pages
       for (const [type, defaultPage] of Object.entries(defaultPages)) {
-        if (!byType[type]) {
+        const existingPage = byType[type]
+        const needsReplacement = !existingPage || hasPlaceholderSections(existingPage.sections)
+        
+        if (needsReplacement) {
+          console.log(`Replacing placeholder content for ${type}`)
           const createRes = await fetch('/api/legal', { 
             method: 'PUT', 
             headers: { 'Content-Type': 'application/json' }, 
