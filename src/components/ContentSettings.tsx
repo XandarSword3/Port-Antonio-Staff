@@ -34,27 +34,50 @@ export default function ContentSettings() {
 
   async function initializeAndLoadContent() {
     try {
-      // Try to load content first
-      await Promise.all([loadFooter(), loadLegal('privacy'), loadLegal('terms'), loadLegal('accessibility')])
-      
-      // Check if we have any content, if not, initialize it
-      const hasFooter = footer && footer.company_name
-      const hasPrivacy = legal.privacy && legal.privacy.sections && legal.privacy.sections.length > 0
-      const hasTerms = legal.terms && legal.terms.sections && legal.terms.sections.length > 0
-      const hasAccessibility = legal.accessibility && legal.accessibility.sections && legal.accessibility.sections.length > 0
-      
-      if (!hasFooter || !hasPrivacy || !hasTerms || !hasAccessibility) {
-        console.log('Initializing content...')
+      // Load everything in one request to avoid race conditions with state updates
+      const loaded = await loadAllContent()
+
+      const hasFooter = !!(loaded.footer && loaded.footer.company_name)
+      const hasPrivacy = !!(loaded.legal.privacy && loaded.legal.privacy.sections && loaded.legal.privacy.sections.length > 0)
+      const hasTerms = !!(loaded.legal.terms && loaded.legal.terms.sections && loaded.legal.terms.sections.length > 0)
+      const hasAccessibility = !!(loaded.legal.accessibility && loaded.legal.accessibility.sections && loaded.legal.accessibility.sections.length > 0)
+
+      // If nothing exists at all, seed initial structure once
+      if (!hasFooter && !hasPrivacy && !hasTerms && !hasAccessibility) {
         const res = await fetch('/api/initialize-content', { method: 'POST' })
         if (res.ok) {
-          // Reload content after initialization
-          await Promise.all([loadFooter(), loadLegal('privacy'), loadLegal('terms'), loadLegal('accessibility')])
+          await loadAllContent()
         }
       }
     } catch (e) {
       console.error('Error initializing content:', e)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function loadAllContent() {
+    try {
+      const res = await fetch('/api/customer-content', { cache: 'no-store' })
+      if (!res.ok) throw new Error(await res.text())
+      const json = await res.json()
+
+      if (json.footer) setFooter(json.footer as Footer)
+      else setFooter({ company_name: '', description: '', address: '', phone: '', email: '', dining_hours: '', dining_location: '', social_links: {} })
+
+      const legalFromApi = (json.legal || {}) as Record<string, LegalPage>
+      setLegal({
+        privacy: legalFromApi.privacy || { type: 'privacy', title: 'Privacy', sections: [] },
+        terms: legalFromApi.terms || { type: 'terms', title: 'Terms', sections: [] },
+        accessibility: legalFromApi.accessibility || { type: 'accessibility', title: 'Accessibility', sections: [] }
+      })
+
+      return { footer: json.footer as Footer | null, legal: { privacy: legalFromApi.privacy || null, terms: legalFromApi.terms || null, accessibility: legalFromApi.accessibility || null } }
+    } catch (e) {
+      console.error('Failed to load all content:', e)
+      // Fall back to per-resource loaders
+      await Promise.all([loadFooter(), loadLegal('privacy'), loadLegal('terms'), loadLegal('accessibility')])
+      return { footer, legal }
     }
   }
 
