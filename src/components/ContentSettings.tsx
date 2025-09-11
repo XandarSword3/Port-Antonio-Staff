@@ -66,10 +66,119 @@ export default function ContentSettings() {
       if (!res.ok) throw new Error(await res.text())
       const pages: LegalPage[] = (await res.json()).legalPages || []
       const byType = pages.reduce((acc: any, p: LegalPage) => { acc[p.type] = p; return acc }, {})
+      
+      // Auto-initialize missing legal pages with real content
+      const defaultPages = {
+        privacy: {
+          type: 'privacy' as const,
+          title: 'Privacy Policy',
+          sections: [
+            {
+              id: 'intro',
+              title: 'Introduction',
+              content: 'At Port San Antonio Resort & Restaurant, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, and protect your information when you visit our resort, dine at our restaurant, or use our services.',
+              order: 1
+            },
+            {
+              id: 'data-collection',
+              title: 'Information We Collect',
+              content: 'We may collect personal information such as your name, contact details, reservation preferences, and payment information when you make reservations, dine with us, or use our services. We also collect information automatically through our website and digital systems to improve your experience.',
+              order: 2
+            },
+            {
+              id: 'data-use',
+              title: 'How We Use Your Information',
+              content: 'We use your personal information to provide and improve our services, process reservations and payments, communicate with you about your visits, and ensure the safety and security of our guests and staff.',
+              order: 3
+            },
+            {
+              id: 'data-protection',
+              title: 'Data Protection',
+              content: 'We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. Your information is stored securely and accessed only by authorized personnel.',
+              order: 4
+            }
+          ]
+        },
+        terms: {
+          type: 'terms' as const,
+          title: 'Terms of Service',
+          sections: [
+            {
+              id: 'acceptance',
+              title: 'Acceptance of Terms',
+              content: 'By visiting Port San Antonio Resort & Restaurant, making reservations, or using our services, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.',
+              order: 1
+            },
+            {
+              id: 'services',
+              title: 'Our Services',
+              content: 'Port San Antonio Resort & Restaurant provides luxury accommodation, fine dining, and hospitality services. We reserve the right to modify or discontinue any service at any time without notice.',
+              order: 2
+            },
+            {
+              id: 'reservations',
+              title: 'Reservations and Cancellations',
+              content: 'Reservations are subject to availability and our cancellation policy. Cancellations must be made within the specified timeframe to avoid charges. Special events and peak seasons may have different policies.',
+              order: 3
+            },
+            {
+              id: 'conduct',
+              title: 'Guest Conduct',
+              content: 'We expect all guests to conduct themselves in a respectful manner. We reserve the right to refuse service or remove guests who engage in disruptive, illegal, or inappropriate behavior.',
+              order: 4
+            }
+          ]
+        },
+        accessibility: {
+          type: 'accessibility' as const,
+          title: 'Accessibility Statement',
+          sections: [
+            {
+              id: 'commitment',
+              title: 'Our Commitment to Accessibility',
+              content: 'Port San Antonio Resort & Restaurant is committed to ensuring that our facilities and services are accessible to all guests, including those with disabilities. We strive to provide an inclusive and welcoming environment for everyone.',
+              order: 1
+            },
+            {
+              id: 'facilities',
+              title: 'Accessible Facilities',
+              content: 'Our resort features wheelchair-accessible rooms, ramps, accessible parking spaces, and adapted bathrooms. Our restaurant dining areas are designed to accommodate guests with mobility devices.',
+              order: 2
+            },
+            {
+              id: 'services',
+              title: 'Accessibility Services',
+              content: 'We offer assistance with luggage, accessible transportation options, and can accommodate special dietary requirements. Our staff is trained to provide courteous assistance to guests with disabilities.',
+              order: 3
+            },
+            {
+              id: 'feedback',
+              title: 'Accessibility Feedback',
+              content: 'We welcome feedback about the accessibility of our facilities and services. If you encounter any barriers or have suggestions for improvement, please contact our management team.',
+              order: 4
+            }
+          ]
+        }
+      }
+
+      // Auto-create missing pages
+      for (const [type, defaultPage] of Object.entries(defaultPages)) {
+        if (!byType[type]) {
+          const createRes = await fetch('/api/legal', { 
+            method: 'PUT', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(defaultPage) 
+          })
+          if (createRes.ok) {
+            byType[type] = defaultPage
+          }
+        }
+      }
+
       setLegal({
-        privacy: byType.privacy || { type: 'privacy', title: '', sections: [] },
-        terms: byType.terms || { type: 'terms', title: '', sections: [] },
-        accessibility: byType.accessibility || { type: 'accessibility', title: '', sections: [] }
+        privacy: byType.privacy || defaultPages.privacy,
+        terms: byType.terms || defaultPages.terms,
+        accessibility: byType.accessibility || defaultPages.accessibility
       })
     } catch (e) {
       console.error('Error loading legal pages:', e)
@@ -100,22 +209,6 @@ export default function ContentSettings() {
     else await loadAllLegal()
   }
 
-  async function initializeContent() {
-    setSaving(true)
-    try {
-      const res = await fetch('/api/initialize-content', { method: 'POST' })
-      if (res.ok) {
-        await initializeAndLoadContent()
-        alert('Content initialized successfully!')
-      } else {
-        alert('Failed to initialize content')
-      }
-    } catch (e) {
-      alert('Failed to initialize content')
-    }
-    setSaving(false)
-  }
-
   if (loading) {
     return (
       <div className="p-6">
@@ -129,19 +222,10 @@ export default function ContentSettings() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {(['footer','privacy','terms','accessibility'] as const).map(tab => (
-            <button key={tab} onClick={()=>setActiveTab(tab)} className={`px-4 py-2 rounded ${activeTab===tab?'bg-staff-600 text-white':'bg-gray-100'}`}>{tab[0].toUpperCase()+tab.slice(1)}</button>
-          ))}
-        </div>
-        <button 
-          disabled={saving} 
-          onClick={initializeContent} 
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-        >
-          {saving ? 'Initializing...' : 'Initialize Content'}
-        </button>
+      <div className="flex items-center gap-2">
+        {(['footer','privacy','terms','accessibility'] as const).map(tab => (
+          <button key={tab} onClick={()=>setActiveTab(tab)} className={`px-4 py-2 rounded ${activeTab===tab?'bg-staff-600 text-white':'bg-gray-100'}`}>{tab[0].toUpperCase()+tab.slice(1)}</button>
+        ))}
       </div>
 
       {activeTab==='footer' && footer && (
