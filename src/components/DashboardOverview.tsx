@@ -21,6 +21,7 @@ interface DashboardStats {
   activeStaff: number;
   completedOrders: number;
   avgOrderTime: number;
+  customerSatisfaction: number;
 }
 
 export default function DashboardOverview() {
@@ -32,6 +33,7 @@ export default function DashboardOverview() {
     activeStaff: 0,
     completedOrders: 0,
     avgOrderTime: 0,
+    customerSatisfaction: 0,
   });
 
   useEffect(() => {
@@ -47,6 +49,7 @@ export default function DashboardOverview() {
           activeStaff: json.activeStaff || 0,
           completedOrders: json.completedOrders || 0,
           avgOrderTime: json.avgOrderTime || 0,
+          customerSatisfaction: json.customerSatisfaction || 0,
         })
       } catch (e) {
         // Keep zeros on failure
@@ -57,6 +60,7 @@ export default function DashboardOverview() {
           activeStaff: 0,
           completedOrders: 0,
           avgOrderTime: 0,
+          customerSatisfaction: 0,
         })
       }
     }
@@ -270,7 +274,7 @@ export default function DashboardOverview() {
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-600 mb-1">
-                96%
+                {stats.customerSatisfaction}%
               </div>
               <div className="text-sm text-gray-500">Customer Satisfaction</div>
             </div>
