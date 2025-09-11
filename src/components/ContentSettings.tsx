@@ -75,9 +75,9 @@ export default function ContentSettings() {
 
       const legalFromApi = (json.legal || {}) as Record<string, LegalPage>
       setLegal({
-        privacy: legalFromApi.privacy || { type: 'privacy', title: 'Privacy', sections: [] },
-        terms: legalFromApi.terms || { type: 'terms', title: 'Terms', sections: [] },
-        accessibility: legalFromApi.accessibility || { type: 'accessibility', title: 'Accessibility', sections: [] }
+        privacy: legalFromApi.privacy || { type: 'privacy', title: '', sections: [] },
+        terms: legalFromApi.terms || { type: 'terms', title: '', sections: [] },
+        accessibility: legalFromApi.accessibility || { type: 'accessibility', title: '', sections: [] }
       })
 
       return { footer: json.footer as Footer | null, legal: { privacy: legalFromApi.privacy || null, terms: legalFromApi.terms || null, accessibility: legalFromApi.accessibility || null } }
