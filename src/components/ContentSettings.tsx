@@ -112,14 +112,14 @@ export default function ContentSettings() {
       if (res.ok) {
         const json = await res.json()
         const page: LegalPage | undefined = json.pages?.[0]
-        setLegal((prev) => ({ ...prev, [type]: page || { type, title: type[0].toUpperCase() + type.slice(1), sections: [] } }))
+        setLegal((prev) => ({ ...prev, [type]: page || { type, title: '', sections: [] } }))
       } else {
         console.error(`Failed to load ${type}:`, await res.text())
-        setLegal((prev) => ({ ...prev, [type]: { type, title: type[0].toUpperCase() + type.slice(1), sections: [] } }))
+        setLegal((prev) => ({ ...prev, [type]: { type, title: '', sections: [] } }))
       }
     } catch (e) {
       console.error(`Error loading ${type}:`, e)
-      setLegal((prev) => ({ ...prev, [type]: { type, title: type[0].toUpperCase() + type.slice(1), sections: [] } }))
+      setLegal((prev) => ({ ...prev, [type]: { type, title: '', sections: [] } }))
     }
   }
 
