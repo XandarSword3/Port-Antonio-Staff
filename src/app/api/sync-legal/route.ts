@@ -26,6 +26,7 @@ async function fetchAndExtract(url: string): Promise<string | null> {
 export async function POST() {
   try {
     if (!supabaseAdmin) return NextResponse.json({ error: 'Service role not configured' }, { status: 500 })
+    const client = supabaseAdmin
 
     const privacyUrl = process.env.CUSTOMER_PRIVACY_URL
     const termsUrl = process.env.CUSTOMER_TERMS_URL
@@ -41,7 +42,7 @@ export async function POST() {
         const content = await fetchAndExtract(url)
         if (!content) return
         const section = [{ id: 'main', title: '', content, order: 1 }]
-        const { error } = await supabaseAdmin
+        const { error } = await client
           .from('legal_pages')
           .upsert({ type, title: type[0].toUpperCase() + type.slice(1), sections: section }, { onConflict: 'type' })
         if (!error) results.updated.push(type)
