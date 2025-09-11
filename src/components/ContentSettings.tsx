@@ -16,15 +16,15 @@ type Footer = {
 
 type LegalPage = {
   id?: string
-  type: 'privacy' | 'terms' | 'accessibility' | 'careers'
+  type: 'privacy' | 'terms' | 'accessibility'
   title: string
   sections: Array<{ id: string; title: string; content: string; order: number }>
 }
 
 export default function ContentSettings() {
-  const [activeTab, setActiveTab] = useState<'footer' | 'privacy' | 'terms' | 'accessibility' | 'careers'>('footer')
+  const [activeTab, setActiveTab] = useState<'footer' | 'privacy' | 'terms' | 'accessibility'>('footer')
   const [footer, setFooter] = useState<Footer | null>(null)
-  const [legal, setLegal] = useState<Record<'privacy' | 'terms' | 'accessibility' | 'careers', LegalPage | null>>({ privacy: null, terms: null, accessibility: null, careers: null })
+  const [legal, setLegal] = useState<Record<'privacy' | 'terms' | 'accessibility', LegalPage | null>>({ privacy: null, terms: null, accessibility: null })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -35,21 +35,20 @@ export default function ContentSettings() {
   async function initializeAndLoadContent() {
     try {
       // Try to load content first
-      await Promise.all([loadFooter(), loadLegal('privacy'), loadLegal('terms'), loadLegal('accessibility'), loadLegal('careers')])
+      await Promise.all([loadFooter(), loadLegal('privacy'), loadLegal('terms'), loadLegal('accessibility')])
       
       // Check if we have any content, if not, initialize it
       const hasFooter = footer && footer.company_name
       const hasPrivacy = legal.privacy && legal.privacy.sections && legal.privacy.sections.length > 0
       const hasTerms = legal.terms && legal.terms.sections && legal.terms.sections.length > 0
       const hasAccessibility = legal.accessibility && legal.accessibility.sections && legal.accessibility.sections.length > 0
-      const hasCareers = legal.careers && legal.careers.sections && legal.careers.sections.length > 0
       
-      if (!hasFooter || !hasPrivacy || !hasTerms || !hasAccessibility || !hasCareers) {
+      if (!hasFooter || !hasPrivacy || !hasTerms || !hasAccessibility) {
         console.log('Initializing content...')
         const res = await fetch('/api/initialize-content', { method: 'POST' })
         if (res.ok) {
           // Reload content after initialization
-          await Promise.all([loadFooter(), loadLegal('privacy'), loadLegal('terms'), loadLegal('accessibility'), loadLegal('careers')])
+          await Promise.all([loadFooter(), loadLegal('privacy'), loadLegal('terms'), loadLegal('accessibility')])
         }
       }
     } catch (e) {
@@ -76,7 +75,7 @@ export default function ContentSettings() {
     }
   }
 
-  async function loadLegal(type: 'privacy' | 'terms' | 'accessibility' | 'careers') {
+  async function loadLegal(type: 'privacy' | 'terms' | 'accessibility') {
     try {
       const res = await fetch(`/api/legal?type=${type}`, { cache: 'no-store' })
       if (res.ok) {
@@ -101,7 +100,7 @@ export default function ContentSettings() {
     if (!res.ok) alert('Failed to save footer')
   }
 
-  async function saveLegal(type: 'privacy' | 'terms' | 'accessibility' | 'careers') {
+  async function saveLegal(type: 'privacy' | 'terms' | 'accessibility') {
     const page = legal[type]
     if (!page) return
     setSaving(true)
@@ -124,7 +123,7 @@ export default function ContentSettings() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-2">
-        {(['footer','privacy','terms','accessibility','careers'] as const).map(tab => (
+        {(['footer','privacy','terms','accessibility'] as const).map(tab => (
           <button key={tab} onClick={()=>setActiveTab(tab)} className={`px-4 py-2 rounded ${activeTab===tab?'bg-staff-600 text-white':'bg-gray-100'}`}>{tab[0].toUpperCase()+tab.slice(1)}</button>
         ))}
       </div>
@@ -152,7 +151,7 @@ export default function ContentSettings() {
         </div>
       )}
 
-      {(['privacy','terms','accessibility','careers'] as const).map(type => (
+      {(['privacy','terms','accessibility'] as const).map(type => (
         activeTab===type && legal[type] && (
           <div key={type} className="card p-6 space-y-4">
             <input className="input" placeholder="Title" value={legal[type]!.title} onChange={e=>setLegal(prev=>({ ...prev, [type]: { ...(prev[type] as LegalPage), title:e.target.value } }))} />

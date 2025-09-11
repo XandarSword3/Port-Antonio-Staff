@@ -16,7 +16,11 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   if (!supabaseAdmin) return NextResponse.json({ error: 'Service role not configured' }, { status: 500 })
   const body = await req.json()
-  const { data, error } = await supabaseAdmin.from('legal_pages').upsert(body).select('*')
+  // Upsert by unique "type" so saving a page replaces existing row for that type
+  const { data, error } = await supabaseAdmin
+    .from('legal_pages')
+    .upsert(body, { onConflict: 'type' })
+    .select('*')
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ page: data?.[0] || null })
 }
