@@ -100,6 +100,22 @@ export default function ContentSettings() {
     else await loadAllLegal()
   }
 
+  async function initializeContent() {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/initialize-content', { method: 'POST' })
+      if (res.ok) {
+        await initializeAndLoadContent()
+        alert('Content initialized successfully!')
+      } else {
+        alert('Failed to initialize content')
+      }
+    } catch (e) {
+      alert('Failed to initialize content')
+    }
+    setSaving(false)
+  }
+
   if (loading) {
     return (
       <div className="p-6">
@@ -113,10 +129,19 @@ export default function ContentSettings() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        {(['footer','privacy','terms','accessibility'] as const).map(tab => (
-          <button key={tab} onClick={()=>setActiveTab(tab)} className={`px-4 py-2 rounded ${activeTab===tab?'bg-staff-600 text-white':'bg-gray-100'}`}>{tab[0].toUpperCase()+tab.slice(1)}</button>
-        ))}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {(['footer','privacy','terms','accessibility'] as const).map(tab => (
+            <button key={tab} onClick={()=>setActiveTab(tab)} className={`px-4 py-2 rounded ${activeTab===tab?'bg-staff-600 text-white':'bg-gray-100'}`}>{tab[0].toUpperCase()+tab.slice(1)}</button>
+          ))}
+        </div>
+        <button 
+          disabled={saving} 
+          onClick={initializeContent} 
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+        >
+          {saving ? 'Initializing...' : 'Initialize Content'}
+        </button>
       </div>
 
       {activeTab==='footer' && footer && (
