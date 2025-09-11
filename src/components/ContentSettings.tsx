@@ -69,17 +69,6 @@ export default function ContentSettings() {
     if (!res.ok) alert('Failed to save footer')
   }
 
-  async function saveLegal(type: 'privacy' | 'terms' | 'accessibility') {
-    const page = legal[type]
-    if (!page) return
-    setSaving(true)
-    const payload = { type: page.type, title: page.title, sections: page.sections }
-    const res = await fetch('/api/legal', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    setSaving(false)
-    if (!res.ok) alert('Failed to save')
-    else await loadAllLegal()
-  }
-
   if (loading) {
     return (
       <div className="p-6">
