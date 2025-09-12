@@ -8,10 +8,10 @@ const supabase = createClient(
 
 export async function GET(
   request: NextRequest, 
-  { params }: { params: { userId: string } }
+  context: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId } = params;
+    const { userId } = await context.params;
     const { searchParams } = new URL(request.url);
     const lookupType = searchParams.get('type') || 'userId'; // 'userId', 'email', or 'phone'
 
@@ -159,10 +159,10 @@ export async function GET(
 // Manual points adjustment endpoint
 export async function POST(
   request: NextRequest, 
-  { params }: { params: { userId: string } }
+  context: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId } = params;
+    const { userId } = await context.params;
     const { points, reason, adjustmentType } = await request.json();
 
     // Verify staff access

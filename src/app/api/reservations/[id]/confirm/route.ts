@@ -8,10 +8,10 @@ const supabase = createClient(
 
 export async function POST(
   request: NextRequest, 
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
 
     // Verify staff access
     const authHeader = request.headers.get('authorization');
