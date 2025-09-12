@@ -298,7 +298,7 @@ async function getTopSelectors(days: number = 30): Promise<SelectorMetric[]> {
 /**
  * Main function to fetch all analytics metrics
  */
-export async function getAnalyticsMetrics(supabase: any, days: number = 30): Promise<AnalyticsMetrics> {
+export async function getAnalyticsMetrics(days: number = 30): Promise<AnalyticsMetrics> {
   try {
     const [
       uniqueVisitors,
