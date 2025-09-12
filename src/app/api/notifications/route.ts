@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '../../../lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export async function GET() {
   try {
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
-    }
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // Get unread notifications for the current user
     // For now, we'll get all unread notifications since we don't have proper auth
-    const { data: notifications, error } = await supabaseAdmin
+    const { data: notifications, error } = await supabase
       .from('notifications')
       .select('*')
       .is('read_at', null)
@@ -33,14 +34,15 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
-    }
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     const { notificationId } = await req.json()
 
     // Mark notification as read
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('notifications')
       .update({ read_at: new Date().toISOString() })
       .eq('id', notificationId)

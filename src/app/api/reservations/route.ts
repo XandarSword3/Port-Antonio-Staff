@@ -31,11 +31,7 @@ export async function GET(request: NextRequest) {
         created_at,
         updated_at,
         created_by,
-        staff_users!created_by (
-          username,
-          first_name,
-          last_name
-        )
+        created_by_name
       `)
       .order('reservation_date', { ascending: false })
       .order('reservation_time', { ascending: false })
@@ -69,9 +65,7 @@ export async function GET(request: NextRequest) {
       createdAt: reservation.created_at,
       updatedAt: reservation.updated_at,
       createdBy: reservation.created_by,
-      createdByName: reservation.staff_users && !Array.isArray(reservation.staff_users) ? 
-        `${(reservation.staff_users as any).first_name} ${(reservation.staff_users as any).last_name}` : 
-        'Unknown',
+      createdByName: reservation.created_by_name || 'Unknown',
       visibleTo: [] // This would be populated based on your business logic
     })) || [];
 
