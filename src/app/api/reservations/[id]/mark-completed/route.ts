@@ -6,13 +6,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export async function POST(
+  request: NextRequest, 
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = params;
     const { loyaltyPoints = 200 } = await request.json(); // Default 200 points per completed reservation

@@ -6,13 +6,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-interface RouteParams {
-  params: {
-    userId: string;
-  };
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest, 
+  { params }: { params: { userId: string } }
+) {
   try {
     const { userId } = params;
     const { searchParams } = new URL(request.url);
@@ -160,7 +157,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 // Manual points adjustment endpoint
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export async function POST(
+  request: NextRequest, 
+  { params }: { params: { userId: string } }
+) {
   try {
     const { userId } = params;
     const { points, reason, adjustmentType } = await request.json();
