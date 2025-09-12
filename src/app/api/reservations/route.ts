@@ -60,14 +60,31 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Executing reservations query...');
     
-    // First, try a simple count to test if the table exists
+    // First, try a simple existence check
     const { data: testData, error: testError } = await supabase
       .from('reservations')
-      .select('count')
+      .select('*')
       .limit(1);
     
     if (testError) {
       console.error('❌ Reservations table access failed:', testError);
+      
+      // If table doesn't exist, return empty results instead of error
+      if (testError.code === 'PGRST116' || testError.message.includes('does not exist')) {
+        console.log('ℹ️ Reservations table does not exist, returning empty results');
+        return NextResponse.json({
+          success: true,
+          reservations: [],
+          total: 0,
+          pagination: {
+            offset,
+            limit,
+            hasMore: false
+          },
+          message: 'Reservations table not yet created'
+        });
+      }
+      
       return NextResponse.json({ 
         error: 'Reservations table not accessible',
         details: testError.message,
@@ -76,7 +93,7 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
     
-    // If basic access works, try the full query
+    // If basic access works, try the full query with error handling
     const { data: reservations, error: reservationsError } = await query;
 
     if (reservationsError) {
@@ -130,10 +147,19 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    console.log('🔍 Creating new reservation...');
+    
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json({ 
+        error: 'Configuration error',
+        details: 'Missing Supabase credentials'
+      }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const {
       customerName,
@@ -153,7 +179,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Create reservation
+    // Create reservation without foreign key constraints
     const { data: reservation, error: createError } = await supabase
       .from('reservations')
       .insert({
@@ -166,37 +192,34 @@ export async function POST(request: NextRequest) {
         table_number: tableNumber,
         special_requests: specialRequests,
         status: 'pending',
-        created_by: null // Will be set by RLS or trigger if needed
+        created_by_name: 'Online System' // Use string instead of foreign key
       })
       .select()
       .single();
 
     if (createError) {
-      console.error('Error creating reservation:', createError);
-      return NextResponse.json({ error: 'Failed to create reservation' }, { status: 500 });
+      console.error('❌ Error creating reservation:', createError);
+      
+      // Handle table not existing gracefully
+      if (createError.code === 'PGRST116' || createError.message.includes('does not exist')) {
+        return NextResponse.json({ 
+          error: 'Reservations system not available',
+          details: 'Reservations table not yet created',
+          code: createError.code
+        }, { status: 503 });
+      }
+      
+      return NextResponse.json({ 
+        error: 'Failed to create reservation',
+        details: createError.message,
+        code: createError.code
+      }, { status: 500 });
     }
 
-    // Log staff activity (optional - skip if no staff user context)
-    try {
-      await supabase
-        .from('staff_activity')
-        .insert({
-          user_id: null,
-          user_name: 'System',
-          action: 'create_reservation',
-          entity_type: 'reservation',
-          entity_id: reservation.id,
-          details: {
-            customer_name: customerName,
-            party_size: partySize,
-            reservation_date: date,
-            reservation_time: time
-          }
-        });
-    } catch (activityError) {
-      // Log activity error but don't fail the request
-      console.warn('Failed to log staff activity:', activityError);
-    }
+    console.log('✅ Reservation created successfully:', reservation.id);
+
+    // Skip staff activity logging since staff_activity table may not exist
+    // This can be re-enabled once proper staff management is set up
 
     return NextResponse.json({
       success: true,
