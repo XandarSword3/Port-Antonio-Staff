@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function GET(
   request: NextRequest, 
   context: { params: Promise<{ userId: string }> }
 ) {
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     const { userId } = await context.params;
     const { searchParams } = new URL(request.url);
     const lookupType = searchParams.get('type') || 'userId'; // 'userId', 'email', or 'phone'
@@ -162,6 +161,11 @@ export async function POST(
   context: { params: Promise<{ userId: string }> }
 ) {
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    
     const { userId } = await context.params;
     const { points, reason, adjustmentType } = await request.json();
 

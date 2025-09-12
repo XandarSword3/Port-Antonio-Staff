@@ -2,13 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getAnalyticsMetrics } from '../../../../lib/analytics.server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function GET(request: NextRequest) {
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     // Get auth header
     const authHeader = request.headers.get('authorization');
     if (!authHeader) {
@@ -39,7 +38,7 @@ export async function GET(request: NextRequest) {
     const days = parseInt(searchParams.get('days') || '30');
 
     // Fetch analytics metrics
-    const metrics = await getAnalyticsMetrics(days);
+    const metrics = await getAnalyticsMetrics(supabase, days);
 
     return NextResponse.json(metrics);
   } catch (error) {
@@ -51,6 +50,11 @@ export async function GET(request: NextRequest) {
 // Alternative endpoint for staff portal direct access (no auth header needed, uses cookies)
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    
     // This endpoint can be called directly from the staff portal
     // It will use the session cookies for authentication
     
@@ -75,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch analytics metrics
-    const metrics = await getAnalyticsMetrics(days);
+    const metrics = await getAnalyticsMetrics(supabase, days);
 
     return NextResponse.json(metrics);
   } catch (error) {

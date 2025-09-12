@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function GET(request: NextRequest) {
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    
     const { searchParams } = new URL(request.url);
     const period = parseInt(searchParams.get('period') || '30');
     const format = searchParams.get('format') || 'html';
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     startDate.setDate(startDate.getDate() - period);
 
     // Fetch KPIs data
-    const kpis = await fetchKPIs(startDate, endDate, period);
+    const kpis = await fetchKPIs(supabase, startDate, endDate, period);
 
     // Generate HTML report
     const htmlReport = generateHTMLReport(kpis, period, staffUser);
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function fetchKPIs(startDate: Date, endDate: Date, period: number) {
+async function fetchKPIs(supabase: any, startDate: Date, endDate: Date, period: number) {
   const startISOString = startDate.toISOString();
   const endISOString = endDate.toISOString();
 
@@ -92,7 +92,7 @@ async function fetchKPIs(startDate: Date, endDate: Date, period: number) {
       .lte('created_at', endISOString);
 
     const totalBookings = reservations?.length || 0;
-    const completedBookings = reservations?.filter(r => r.status === 'completed').length || 0;
+    const completedBookings = reservations?.filter((r: any) => r.status === 'completed').length || 0;
     
     // Calculate conversion rate
     const conversionRate = visits > 0 ? ((totalBookings / visits) * 100) : 0;
@@ -104,17 +104,17 @@ async function fetchKPIs(startDate: Date, endDate: Date, period: number) {
       .gte('created_at', startISOString)
       .lte('created_at', endISOString);
 
-    const customerEmails = repeatCustomers?.filter(r => r.customer_email).map(r => r.customer_email) || [];
-    const customerPhones = repeatCustomers?.filter(r => r.customer_phone).map(r => r.customer_phone) || [];
+    const customerEmails = repeatCustomers?.filter((r: any) => r.customer_email).map((r: any) => r.customer_email) || [];
+    const customerPhones = repeatCustomers?.filter((r: any) => r.customer_phone).map((r: any) => r.customer_phone) || [];
     
     const emailCounts: { [key: string]: number } = {};
     const phoneCounts: { [key: string]: number } = {};
     
-    customerEmails.forEach(email => {
+    customerEmails.forEach((email: any) => {
       emailCounts[email] = (emailCounts[email] || 0) + 1;
     });
-    
-    customerPhones.forEach(phone => {
+
+    customerPhones.forEach((phone: any) => {
       phoneCounts[phone] = (phoneCounts[phone] || 0) + 1;
     });
     
@@ -137,13 +137,11 @@ async function fetchKPIs(startDate: Date, endDate: Date, period: number) {
       .gte('created_at', startISOString)
       .lte('created_at', endISOString);
 
-    const totalPointsEarned = loyaltyTransactions?.filter(t => t.transaction_type === 'earn')
-      .reduce((sum, t) => sum + t.points, 0) || 0;
-    
-    const totalPointsRedeemed = loyaltyTransactions?.filter(t => t.transaction_type === 'redeem')
-      .reduce((sum, t) => sum + Math.abs(t.points), 0) || 0;
+    const totalPointsEarned = loyaltyTransactions?.filter((t: any) => t.transaction_type === 'earn')     
+      .reduce((sum: any, t: any) => sum + t.points, 0) || 0;
 
-    return {
+    const totalPointsRedeemed = loyaltyTransactions?.filter((t: any) => t.transaction_type === 'redeem')
+      .reduce((sum: any, t: any) => sum + Math.abs(t.points), 0) || 0;    return {
       period: period,
       startDate: startDate.toLocaleDateString(),
       endDate: endDate.toLocaleDateString(),
@@ -161,12 +159,12 @@ async function fetchKPIs(startDate: Date, endDate: Date, period: number) {
       loyaltyEngagement: loyaltyTransactions?.length || 0,
       // Status breakdown
       statusBreakdown: {
-        pending: reservations?.filter(r => r.status === 'pending').length || 0,
-        confirmed: reservations?.filter(r => r.status === 'confirmed').length || 0,
-        arrived: reservations?.filter(r => r.status === 'arrived').length || 0,
+        pending: reservations?.filter((r: any) => r.status === 'pending').length || 0,
+        confirmed: reservations?.filter((r: any) => r.status === 'confirmed').length || 0,
+        arrived: reservations?.filter((r: any) => r.status === 'arrived').length || 0,
         completed: completedBookings,
-        cancelled: reservations?.filter(r => r.status === 'cancelled').length || 0,
-        noShow: reservations?.filter(r => r.status === 'no_show').length || 0
+        cancelled: reservations?.filter((r: any) => r.status === 'cancelled').length || 0,
+        noShow: reservations?.filter((r: any) => r.status === 'no_show').length || 0
       }
     };
   } catch (error) {

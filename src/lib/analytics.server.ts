@@ -1,11 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-// Server-side client with service role for analytics queries
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
 // Analytics types
 export interface AnalyticsMetrics {
   uniqueVisitors: number;
@@ -49,6 +43,10 @@ async function getUniqueVisitors(days: number = 30): Promise<number> {
   
   // Check if analytics table exists, create placeholder data if not
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     const { data, error } = await supabase
       .from('analytics')
       .select('visitor_id')
@@ -75,8 +73,12 @@ async function getUniqueVisitors(days: number = 30): Promise<number> {
 async function getDailyPageViews(days: number = 30): Promise<DailyMetric[]> {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
-  
+
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     const { data, error } = await supabase
       .from('analytics')
       .select('timestamp')
@@ -127,6 +129,11 @@ async function getConversionFunnel(days: number = 30): Promise<ConversionFunnel>
   cutoffDate.setDate(cutoffDate.getDate() - days);
   
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    
     // Get page views
     const { data: pageViews } = await supabase
       .from('analytics')
@@ -183,6 +190,11 @@ async function getTopPages(days: number = 30): Promise<PageMetric[]> {
   cutoffDate.setDate(cutoffDate.getDate() - days);
   
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    
     const { data, error } = await supabase
       .from('analytics')
       .select('page, time_on_page')
@@ -253,6 +265,11 @@ async function getTopSelectors(days: number = 30): Promise<SelectorMetric[]> {
   cutoffDate.setDate(cutoffDate.getDate() - days);
   
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    
     const { data, error } = await supabase
       .from('analytics')
       .select('selector, page')
@@ -318,7 +335,7 @@ async function getTopSelectors(days: number = 30): Promise<SelectorMetric[]> {
 /**
  * Main function to fetch all analytics metrics
  */
-export async function getAnalyticsMetrics(days: number = 30): Promise<AnalyticsMetrics> {
+export async function getAnalyticsMetrics(supabase: any, days: number = 30): Promise<AnalyticsMetrics> {
   try {
     const [
       uniqueVisitors,
