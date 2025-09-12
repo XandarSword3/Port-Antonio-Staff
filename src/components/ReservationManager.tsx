@@ -30,20 +30,75 @@ export default function ReservationManager() {
   const [loyaltyReason, setLoyaltyReason] = useState('');
 
   useEffect(() => {
-    fetchReservations();
+    let mounted = true;
+    
+    const loadReservations = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch('/api/reservations');
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.warn('Reservations API returned error:', response.status, errorText);
+          
+          if (mounted) {
+            setReservations([]);
+            setError(`Unable to load reservations (Status: ${response.status}). The reservations system may be unavailable.`);
+          }
+          return;
+        }
+        
+        const data = await response.json();
+        if (mounted) {
+          setReservations(data.reservations || []);
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Error fetching reservations:', err);
+        if (mounted) {
+          setReservations([]);
+          setError('Failed to load reservations. Please try again later.');
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadReservations();
+    
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const fetchReservations = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear previous errors
+      
       const response = await fetch('/api/reservations');
-      if (!response.ok) throw new Error('Failed to fetch reservations');
+      if (!response.ok) {
+        // Instead of throwing, handle the error gracefully
+        const errorText = await response.text();
+        console.warn('Reservations API returned error:', response.status, errorText);
+        
+        // Set empty reservations instead of throwing
+        setReservations([]);
+        setError(`Unable to load reservations (Status: ${response.status}). The reservations system may be unavailable.`);
+        return;
+      }
       
       const data = await response.json();
       setReservations(data.reservations || []);
+      setError(null); // Clear error on success
     } catch (err) {
-      setError('Failed to load reservations');
       console.error('Error fetching reservations:', err);
+      setReservations([]); // Prevent undefined state
+      setError('Failed to load reservations. Please try again later.');
     } finally {
       setLoading(false);
     }

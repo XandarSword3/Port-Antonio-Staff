@@ -23,22 +23,47 @@ export default function StaffManager() {
   const [form, setForm] = useState<Partial<StaffUserRow>>({ role: 'worker', is_active: true })
   const [editingId, setEditingId] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadUsers()
-  }, [])
-
-  async function loadUsers() {
+  const loadUsers = async () => {
     try {
-      const res = await fetch('/api/users', { cache: 'no-store' })
-      if (!res.ok) throw new Error(await res.text())
-      const json = await res.json()
-      setUsers(json.users || [])
+      setLoading(true);
+      setError(null);
+      
+      const res = await fetch('/api/users', { cache: 'no-store' });
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.warn('Users API error:', res.status, errorText);
+        setUsers([]);
+        setError(`Unable to load staff users (Status: ${res.status})`);
+        return;
+      }
+      
+      const json = await res.json();
+      setUsers(json.users || []);
+      setError(null);
     } catch (e: any) {
-      setError(e?.message || 'Failed to load users')
+      console.error('Error loading users:', e);
+      setError(e?.message || 'Failed to load users');
+      setUsers([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    
+    const initialLoad = async () => {
+      if (mounted) {
+        await loadUsers();
+      }
+    };
+
+    initialLoad();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   async function handleSave() {
     const payload = { ...form }
