@@ -136,7 +136,7 @@ export interface Reservation {
   time: string
   tableNumber?: string
   specialRequests?: string
-  status: 'pending' | 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no-show'
+  status: 'pending' | 'confirmed' | 'reminded' | 'arrived' | 'completed' | 'cancelled' | 'no_show'
   createdBy: string
   createdByName: string
   createdAt: string
@@ -198,14 +198,34 @@ export interface FooterSettings {
   email: string
   diningHours: string
   diningLocation: string
-  socialLinks: {
-    facebook?: string
-    instagram?: string
-    twitter?: string
-    linkedin?: string
-  }
-  lastUpdated: Date
-  updatedBy: string
+}
+
+// Loyalty System Types
+export interface LoyaltyAccount {
+  id: string
+  userId?: string
+  email?: string
+  phone?: string
+  points: number
+  tier: 'bronze' | 'silver' | 'gold' | 'platinum'
+  totalEarned: number
+  totalRedeemed: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface LoyaltyTransaction {
+  id: string
+  loyaltyAccountId: string
+  transactionType: 'earn' | 'redeem' | 'expire' | 'adjust'
+  points: number
+  reason: string
+  referenceType?: string
+  referenceId?: string
+  staffUserId?: string
+  metadata?: Record<string, any>
+  createdAt: string
+  expiresAt?: string
 }
 
 export interface AuthPayload {
