@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "verify-setup": "node scripts/verify-setup.js",
+    "sync-data": "node scripts/complete-sync.js",
+    "import-menu": "node scripts/import-menu.js",
+    "clear-content": "node scripts/clear-hardcoded-content.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
