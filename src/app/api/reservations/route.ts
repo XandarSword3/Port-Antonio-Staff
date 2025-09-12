@@ -49,8 +49,7 @@ export async function GET(request: NextRequest) {
         created_by,
         created_by_name
       `)
-      .order('reservation_date', { ascending: false })
-      .order('reservation_time', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(limit)
       .range(offset, offset + limit - 1);
 
@@ -60,6 +59,24 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('🔍 Executing reservations query...');
+    
+    // First, try a simple count to test if the table exists
+    const { data: testData, error: testError } = await supabase
+      .from('reservations')
+      .select('count')
+      .limit(1);
+    
+    if (testError) {
+      console.error('❌ Reservations table access failed:', testError);
+      return NextResponse.json({ 
+        error: 'Reservations table not accessible',
+        details: testError.message,
+        code: testError.code,
+        hint: 'The reservations table may not exist or have permission issues'
+      }, { status: 500 });
+    }
+    
+    // If basic access works, try the full query
     const { data: reservations, error: reservationsError } = await query;
 
     if (reservationsError) {

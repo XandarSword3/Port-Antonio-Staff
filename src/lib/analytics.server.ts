@@ -48,12 +48,11 @@ async function getUniqueVisitors(days: number = 30): Promise<number> {
     );
     const { data, error } = await supabase
       .from('visitors')
-      .select('id')
-      .gte('first_visit', cutoffDate.toISOString());
+      .select('visitor_id')
+      .gte('first_seen', cutoffDate.toISOString());
     
     if (error) {
       console.warn('Visitors table query failed:', error);
-      // Return fallback data
       return 0;
     }
     
@@ -78,10 +77,10 @@ async function getDailyPageViews(days: number = 30): Promise<DailyMetric[]> {
     );
     const { data, error } = await supabase
       .from('analytics_events')
-      .select('timestamp')
-      .gte('timestamp', cutoffDate.toISOString())
-      .eq('event_type', 'page_view')
-      .order('timestamp', { ascending: true });
+      .select('created_at')
+      .gte('created_at', cutoffDate.toISOString())
+      .eq('event_name', 'page_view')
+      .order('created_at', { ascending: true });
     
     if (error) {
       console.warn('Analytics events query failed:', error);
@@ -95,7 +94,7 @@ async function getDailyPageViews(days: number = 30): Promise<DailyMetric[]> {
     // Group by date
     const dailyCounts: { [key: string]: number } = {};
     data?.forEach(row => {
-      const date = new Date(row.timestamp).toISOString().split('T')[0];
+      const date = new Date(row.created_at).toISOString().split('T')[0];
       dailyCounts[date] = (dailyCounts[date] || 0) + 1;
     });
     
@@ -137,16 +136,16 @@ async function getConversionFunnel(days: number = 30): Promise<ConversionFunnel>
     const { data: pageViews } = await supabase
       .from('analytics_events')
       .select('id')
-      .gte('timestamp', cutoffDate.toISOString())
-      .eq('event_type', 'page_view');
+      .gte('created_at', cutoffDate.toISOString())
+      .eq('event_name', 'page_view');
     
     // Get reservation starts (visiting reservation page)
     const { data: reservationStarts } = await supabase
       .from('analytics_events')
       .select('id')
-      .gte('timestamp', cutoffDate.toISOString())
-      .eq('event_type', 'page_view')
-      .ilike('page_url', '%reservation%');
+      .gte('created_at', cutoffDate.toISOString())
+      .eq('event_name', 'page_view')
+      .ilike('url', '%reservation%');
     
     // Get actual reservations created
     const { data: reservationSubmits } = await supabase
@@ -193,10 +192,10 @@ async function getTopPages(days: number = 30): Promise<PageMetric[]> {
     
     const { data, error } = await supabase
       .from('analytics_events')
-      .select('page_url, metadata')
-      .gte('timestamp', cutoffDate.toISOString())
-      .eq('event_type', 'page_view')
-      .not('page_url', 'is', null);
+      .select('url, event_props')
+      .gte('created_at', cutoffDate.toISOString())
+      .eq('event_name', 'page_view')
+      .not('url', 'is', null);
     
     if (error) {
       console.warn('Top pages query failed:', error);
@@ -208,8 +207,8 @@ async function getTopPages(days: number = 30): Promise<PageMetric[]> {
     const pageMetrics: { [key: string]: { views: number; totalTime: number } } = {};
     
     data?.forEach(row => {
-      const page = row.page_url || '/';
-      const timeOnPage = row.metadata?.time_on_page || 0;
+      const page = row.url || '/';
+      const timeOnPage = row.event_props?.time_on_page || 0;
       
       if (!pageMetrics[page]) {
         pageMetrics[page] = { views: 0, totalTime: 0 };
@@ -251,10 +250,10 @@ async function getTopSelectors(days: number = 30): Promise<SelectorMetric[]> {
     
     const { data, error } = await supabase
       .from('analytics_events')
-      .select('metadata, page_url')
-      .gte('timestamp', cutoffDate.toISOString())
-      .eq('event_type', 'click')
-      .not('metadata', 'is', null);
+      .select('event_props, url')
+      .gte('created_at', cutoffDate.toISOString())
+      .eq('event_name', 'click')
+      .not('event_props', 'is', null);
     
     if (error) {
       console.warn('Top selectors query failed:', error);
@@ -266,8 +265,8 @@ async function getTopSelectors(days: number = 30): Promise<SelectorMetric[]> {
     const selectorCounts: { [key: string]: { clicks: number; page: string } } = {};
     
     data?.forEach(row => {
-      const selector = row.metadata?.selector || row.metadata?.element;
-      const page = row.page_url || '/';
+      const selector = row.event_props?.selector || row.event_props?.element;
+      const page = row.url || '/';
       
       if (selector) {
         const key = `${selector}-${page}`;
