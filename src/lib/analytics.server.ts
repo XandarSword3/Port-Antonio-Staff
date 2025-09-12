@@ -41,29 +41,26 @@ async function getUniqueVisitors(days: number = 30): Promise<number> {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
   
-  // Check if analytics table exists, create placeholder data if not
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
     const { data, error } = await supabase
-      .from('analytics')
-      .select('visitor_id')
-      .gte('timestamp', cutoffDate.toISOString())
-      .not('visitor_id', 'is', null);
+      .from('visitors')
+      .select('id')
+      .gte('first_visit', cutoffDate.toISOString());
     
     if (error) {
-      console.warn('Analytics table not found, returning simulated data');
-      // Return simulated data for demo purposes
-      return Math.floor(Math.random() * 1500) + 500;
+      console.warn('Visitors table query failed:', error);
+      // Return fallback data
+      return 0;
     }
     
-    const uniqueVisitors = new Set(data?.map(row => row.visitor_id) || []);
-    return uniqueVisitors.size;
+    return data?.length || 0;
   } catch (error) {
-    console.warn('Analytics query failed, returning simulated data');
-    return Math.floor(Math.random() * 1500) + 500;
+    console.warn('Analytics query failed:', error);
+    return 0;
   }
 }
 
@@ -80,17 +77,18 @@ async function getDailyPageViews(days: number = 30): Promise<DailyMetric[]> {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
     const { data, error } = await supabase
-      .from('analytics')
+      .from('analytics_events')
       .select('timestamp')
       .gte('timestamp', cutoffDate.toISOString())
       .eq('event_type', 'page_view')
       .order('timestamp', { ascending: true });
     
     if (error) {
-      // Return simulated daily data
+      console.warn('Analytics events query failed:', error);
+      // Return empty data
       return Array.from({ length: days }, (_, i) => ({
         date: new Date(Date.now() - (days - 1 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        value: Math.floor(Math.random() * 200) + 50
+        value: 0
       }));
     }
     
@@ -113,10 +111,11 @@ async function getDailyPageViews(days: number = 30): Promise<DailyMetric[]> {
     
     return result;
   } catch (error) {
-    // Return simulated data
+    console.warn('Analytics query failed:', error);
+    // Return empty data
     return Array.from({ length: days }, (_, i) => ({
       date: new Date(Date.now() - (days - 1 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      value: Math.floor(Math.random() * 200) + 50
+      value: 0
     }));
   }
 }
@@ -136,18 +135,18 @@ async function getConversionFunnel(days: number = 30): Promise<ConversionFunnel>
     
     // Get page views
     const { data: pageViews } = await supabase
-      .from('analytics')
+      .from('analytics_events')
       .select('id')
       .gte('timestamp', cutoffDate.toISOString())
       .eq('event_type', 'page_view');
     
     // Get reservation starts (visiting reservation page)
     const { data: reservationStarts } = await supabase
-      .from('analytics')
+      .from('analytics_events')
       .select('id')
       .gte('timestamp', cutoffDate.toISOString())
       .eq('event_type', 'page_view')
-      .ilike('page', '%reservation%');
+      .ilike('page_url', '%reservation%');
     
     // Get actual reservations created
     const { data: reservationSubmits } = await supabase
@@ -162,22 +161,19 @@ async function getConversionFunnel(days: number = 30): Promise<ConversionFunnel>
     const conversionRate = pageViewCount > 0 ? (reservationSubmitCount / pageViewCount) * 100 : 0;
     
     return {
-      pageViews: pageViewCount || Math.floor(Math.random() * 5000) + 1000,
-      reservationStarts: reservationStartCount || Math.floor(Math.random() * 500) + 100,
+      pageViews: pageViewCount,
+      reservationStarts: reservationStartCount,
       reservationSubmits: reservationSubmitCount,
       conversionRate: Number(conversionRate.toFixed(2))
     };
   } catch (error) {
-    // Return simulated funnel data
-    const pageViews = Math.floor(Math.random() * 5000) + 1000;
-    const reservationStarts = Math.floor(pageViews * 0.15);
-    const reservationSubmits = Math.floor(reservationStarts * 0.25);
-    
+    console.warn('Conversion funnel query failed:', error);
+    // Return empty funnel data
     return {
-      pageViews,
-      reservationStarts,
-      reservationSubmits,
-      conversionRate: Number(((reservationSubmits / pageViews) * 100).toFixed(2))
+      pageViews: 0,
+      reservationStarts: 0,
+      reservationSubmits: 0,
+      conversionRate: 0
     };
   }
 }
@@ -196,37 +192,30 @@ async function getTopPages(days: number = 30): Promise<PageMetric[]> {
     );
     
     const { data, error } = await supabase
-      .from('analytics')
-      .select('page, time_on_page')
+      .from('analytics_events')
+      .select('page_url, metadata')
       .gte('timestamp', cutoffDate.toISOString())
       .eq('event_type', 'page_view')
-      .not('page', 'is', null);
+      .not('page_url', 'is', null);
     
     if (error) {
-      // Return simulated top pages
-      return [
-        { page: '/menu', views: 1234, avgTimeOnPage: 145 },
-        { page: '/reservations', views: 856, avgTimeOnPage: 89 },
-        { page: '/', views: 743, avgTimeOnPage: 67 },
-        { page: '/events', views: 432, avgTimeOnPage: 123 },
-        { page: '/about', views: 321, avgTimeOnPage: 156 },
-        { page: '/contact', views: 234, avgTimeOnPage: 78 },
-        { page: '/jobs', views: 198, avgTimeOnPage: 189 },
-        { page: '/gallery', views: 167, avgTimeOnPage: 134 },
-        { page: '/private-dining', views: 134, avgTimeOnPage: 98 },
-        { page: '/wine-list', views: 112, avgTimeOnPage: 87 }
-      ];
+      console.warn('Top pages query failed:', error);
+      // Return empty data
+      return [];
     }
     
     // Group by page and calculate metrics
     const pageMetrics: { [key: string]: { views: number; totalTime: number } } = {};
     
     data?.forEach(row => {
-      if (!pageMetrics[row.page]) {
-        pageMetrics[row.page] = { views: 0, totalTime: 0 };
+      const page = row.page_url || '/';
+      const timeOnPage = row.metadata?.time_on_page || 0;
+      
+      if (!pageMetrics[page]) {
+        pageMetrics[page] = { views: 0, totalTime: 0 };
       }
-      pageMetrics[row.page].views++;
-      pageMetrics[row.page].totalTime += row.time_on_page || 0;
+      pageMetrics[page].views++;
+      pageMetrics[page].totalTime += timeOnPage;
     });
     
     // Convert to array and calculate averages
@@ -241,19 +230,9 @@ async function getTopPages(days: number = 30): Promise<PageMetric[]> {
     
     return result;
   } catch (error) {
-    // Return simulated data
-    return [
-      { page: '/menu', views: 1234, avgTimeOnPage: 145 },
-      { page: '/reservations', views: 856, avgTimeOnPage: 89 },
-      { page: '/', views: 743, avgTimeOnPage: 67 },
-      { page: '/events', views: 432, avgTimeOnPage: 123 },
-      { page: '/about', views: 321, avgTimeOnPage: 156 },
-      { page: '/contact', views: 234, avgTimeOnPage: 78 },
-      { page: '/jobs', views: 198, avgTimeOnPage: 189 },
-      { page: '/gallery', views: 167, avgTimeOnPage: 134 },
-      { page: '/private-dining', views: 134, avgTimeOnPage: 98 },
-      { page: '/wine-list', views: 112, avgTimeOnPage: 87 }
-    ];
+    console.warn('Analytics query failed:', error);
+    // Return empty data
+    return [];
   }
 }
 
@@ -271,37 +250,32 @@ async function getTopSelectors(days: number = 30): Promise<SelectorMetric[]> {
     );
     
     const { data, error } = await supabase
-      .from('analytics')
-      .select('selector, page')
+      .from('analytics_events')
+      .select('metadata, page_url')
       .gte('timestamp', cutoffDate.toISOString())
       .eq('event_type', 'click')
-      .not('selector', 'is', null);
+      .not('metadata', 'is', null);
     
     if (error) {
-      // Return simulated selector data
-      return [
-        { selector: '.reservation-button', clicks: 234, page: '/menu' },
-        { selector: '.menu-item-card', clicks: 189, page: '/menu' },
-        { selector: '.nav-reservations', clicks: 156, page: '/' },
-        { selector: '.hero-cta', clicks: 134, page: '/' },
-        { selector: '.event-card', clicks: 98, page: '/events' },
-        { selector: '.contact-form-submit', clicks: 87, page: '/contact' },
-        { selector: '.job-apply-button', clicks: 67, page: '/jobs' },
-        { selector: '.footer-phone', clicks: 56, page: '/' },
-        { selector: '.social-instagram', clicks: 45, page: '/' },
-        { selector: '.wine-category', clicks: 34, page: '/wine-list' }
-      ];
+      console.warn('Top selectors query failed:', error);
+      // Return empty data
+      return [];
     }
     
     // Group by selector and count clicks
     const selectorCounts: { [key: string]: { clicks: number; page: string } } = {};
     
     data?.forEach(row => {
-      const key = `${row.selector}-${row.page}`;
-      if (!selectorCounts[key]) {
-        selectorCounts[key] = { clicks: 0, page: row.page };
+      const selector = row.metadata?.selector || row.metadata?.element;
+      const page = row.page_url || '/';
+      
+      if (selector) {
+        const key = `${selector}-${page}`;
+        if (!selectorCounts[key]) {
+          selectorCounts[key] = { clicks: 0, page };
+        }
+        selectorCounts[key].clicks++;
       }
-      selectorCounts[key].clicks++;
     });
     
     // Convert to array and sort
@@ -316,19 +290,9 @@ async function getTopSelectors(days: number = 30): Promise<SelectorMetric[]> {
     
     return result;
   } catch (error) {
-    // Return simulated data
-    return [
-      { selector: '.reservation-button', clicks: 234, page: '/menu' },
-      { selector: '.menu-item-card', clicks: 189, page: '/menu' },
-      { selector: '.nav-reservations', clicks: 156, page: '/' },
-      { selector: '.hero-cta', clicks: 134, page: '/' },
-      { selector: '.event-card', clicks: 98, page: '/events' },
-      { selector: '.contact-form-submit', clicks: 87, page: '/contact' },
-      { selector: '.job-apply-button', clicks: 67, page: '/jobs' },
-      { selector: '.footer-phone', clicks: 56, page: '/' },
-      { selector: '.social-instagram', clicks: 45, page: '/' },
-      { selector: '.wine-category', clicks: 34, page: '/wine-list' }
-    ];
+    console.warn('Analytics query failed:', error);
+    // Return empty data
+    return [];
   }
 }
 
