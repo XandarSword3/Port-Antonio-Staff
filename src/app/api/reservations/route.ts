@@ -3,10 +3,25 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    console.log('🔍 Reservations API - Starting request');
+    
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    console.log('Environment check:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseServiceKey
+    });
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ Missing Supabase environment variables');
+      return NextResponse.json({ 
+        error: 'Configuration error',
+        details: 'Missing Supabase credentials'
+      }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -15,6 +30,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     // Build query
+    console.log('🔍 Building reservations query...');
     let query = supabase
       .from('reservations')
       .select(`
@@ -43,11 +59,16 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status);
     }
 
+    console.log('🔍 Executing reservations query...');
     const { data: reservations, error: reservationsError } = await query;
 
     if (reservationsError) {
-      console.error('Error fetching reservations:', reservationsError);
-      return NextResponse.json({ error: 'Failed to fetch reservations' }, { status: 500 });
+      console.error('❌ Error fetching reservations:', reservationsError);
+      return NextResponse.json({ 
+        error: 'Failed to fetch reservations',
+        details: reservationsError.message,
+        code: reservationsError.code
+      }, { status: 500 });
     }
 
     // Transform the data to match the expected format
@@ -80,9 +101,13 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error) {
-    console.error('Reservations API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('❌ Reservations API error:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 }
 
